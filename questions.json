@@ -1,0 +1,10 @@
+[
+{"q":"I ___ to school every day.","o":["go","goes","going","went"],"a":0},
+{"q":"She ___ a book now.","o":["read","is reading","reads","readed"],"a":1},
+{"q":"Yesterday, we ___ soccer.","o":["play","plays","played","playing"],"a":2},
+{"q":"This is the ___ building in my town.","o":["tall","taller","tallest","most tall"],"a":2},
+{"q":"I have ___ been to Kyoto.","o":["ever","never","yesterday","ago"],"a":1},
+{"q":"The window ___ by Ken.","o":["broke","was broken","breaks","is break"],"a":1},
+{"q":"What is the opposite of 'difficult'?","o":["easy","heavy","late","cold"],"a":0},
+{"q":"I want something ___ drink.","o":["for","to","of","at"],"a":1}
+]

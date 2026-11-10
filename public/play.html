@@ -1,0 +1,34 @@
+<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
+<title>Monster Review</title>
+<style>
+body{margin:0;font-family:system-ui,sans-serif;background:#1b1f3b;color:#fff;text-align:center;padding:1rem}
+button,input{font-size:1.3rem;padding:.7em 1em;border-radius:12px;border:0;margin:.3em;width:min(90%,520px);box-sizing:border-box}
+button{background:#ffd43b;font-weight:700;cursor:pointer;color:#222}
+#opts button{display:block;margin:.5em auto;background:#fff}
+#bar{height:14px;background:#0005;border-radius:8px;max-width:520px;margin:.5rem auto}#fill{height:100%;border-radius:8px;width:0}
+</style>
+<div id=tp></div><div id=bar><div id=fill></div></div><div id=m></div>
+<script src=/socket.io/socket.io.js></script>
+<script>
+const s=io(),m=document.getElementById('m'),tp=document.getElementById('tp'),fill=document.getElementById('fill');
+let S={teams:[],phase:'lobby'},me=null,cur=null,locked=false,mode='',joined=false;
+m.innerHTML=`<h1>Join the game</h1><input id=nm placeholder="Your name"><br><button onclick="join()">Join</button>`;
+function join(){const n=nm.value.trim();if(!n)return;joined=true;s.emit('join',n)}
+s.on('you',id=>me=id);
+s.on('state',st=>{S=st;draw()});
+function draw(){
+ if(!joined)return;
+ if(S.phase=='lobby'){mode='';tp.innerHTML='';fill.style.width=0;m.innerHTML='<h2>Waiting for the teacher to start…</h2>';return}
+ const t=S.teams.find(t=>t.id==me);if(!t)return;
+ tp.innerHTML=`<h2 style="color:${t.color}">${t.name}</h2>`;fill.style.background=t.color;fill.style.width=100*t.progress/t.target+'%';
+ const md=S.phase=='done'?'done':t.hunting?'hunt':'q';
+ if(md==mode)return;mode=md;
+ if(md=='done')m.innerHTML='<h1>🏆 One giant monster! Everyone wins together!</h1>';
+ else if(md=='hunt')m.innerHTML=`<h1>🍽 HUNT!</h1><p>Pick a monster to eat. Bigger monsters win!</p>`+S.teams.filter(o=>o.id!=me).map(o=>`<button style="background:${o.color}" onclick="s.emit('hunt',${o.id})">${o.name} (size ${o.mass})</button>`).join('')+`<p>Your size: ${t.mass}</p>`;
+ else s.emit('next')}
+s.on('q',q=>{cur=q;locked=false;if(mode!='q')return;
+ m.innerHTML=`<h2>${q.q}</h2><div id=opts>${q.o.map((o,i)=>`<button onclick="ans(${i})">${o}</button>`).join('')}</div>`});
+function ans(i){if(locked)return;locked=true;s.emit('ans',{id:cur.id,c:i})}
+s.on('res',r=>{m.innerHTML=`<h1>${r.ok?'✅ Correct!':'❌ Not quite'}</h1><p>${r.ok?'':'Answer: '+r.a}</p>`;
+ setTimeout(()=>{if(mode=='q')s.emit('next')},1200)});
+</script>
