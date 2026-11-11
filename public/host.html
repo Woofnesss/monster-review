@@ -9,16 +9,32 @@ button{background:#ffd43b;cursor:pointer;font-weight:700;padding:.5em 1.2em}
 #bn{position:fixed;top:14px;width:100%;text-align:center;font-size:2.4rem;font-weight:800;text-shadow:0 2px 6px #000}
 </style>
 <canvas id=c></canvas><div id=bn></div><div id=ui></div>
+<div style="position:fixed;right:10px;bottom:10px;opacity:.75"><button id=mb style="font-size:1.1rem;padding:.2em .5em;margin:0" onclick="muted=!muted;mb.textContent=muted?'🔇':'🔊';musicSync()">🔊</button> <input type=range min=0 max=100 value=70 oninput="vol=this.value/100;musicSync()" style="vertical-align:middle"></div>
 <script src=/socket.io/socket.io.js></script>
 <script>
-const s=io(),c=document.getElementById('c'),x=c.getContext('2d'),ui=document.getElementById('ui'),bn=document.getElementById('bn');
-let S={phase:'',teams:[],np:0,tags:[]},pos={},W,H,last=0;
+const s=io(),c=document.getElementById('c'),x=c.getContext('2d'),ui=document.getElementById('ui'),bn=document.getElementById('bn'),mus=new Audio();
+let S={phase:'',teams:[],np:0,tags:[]},pos={},W,H,last=0,MAN={frames:{},fps:{},audio:{}},vol=.7,muted=false,trk='',lastSfx={},shake=-1e9,imgs={},prevE={};
+fetch('/assets.json').then(r=>r.json()).then(m=>MAN=m).catch(()=>{});
 const size=()=>{W=c.width=innerWidth;H=c.height=innerHeight};size();onresize=size;
 s.emit('host');
-s.on('state',st=>{const ph=S.phase;S=st;S.t0=Date.now();if(ph!=st.phase||st.phase=='lobby'||st.phase=='countdown')ui_()});
+// ---- sound ----
+const GAP={correct:250,wrong:250};
+function sfx(n){const u=MAN.audio['sfx/'+n],now=Date.now();if(!u||muted||now-(lastSfx[n]||0)<(GAP[n]||0))return;lastSfx[n]=now;const a=new Audio(u);a.volume=vol;a.play().catch(()=>{})}
+function musicSync(){const w={setup:'lobby',lobby:'lobby',countdown:'game',playing:'game',results:'results',final:'results'}[S.phase],u=MAN.audio['music/'+w];
+ if(!u){mus.pause();trk='';return}if(trk!=u){mus.src=u;trk=u;mus.loop=true}mus.volume=muted?0:vol*.6;mus.play().catch(()=>{})}
+document.addEventListener('click',musicSync);
+// ---- state / events ----
+s.on('state',st=>{const ph=S.phase,pc=S.count;
+ st.teams.forEach(t=>{if(prevE[t.id]===false&&t.eating)sfx('eatready');prevE[t.id]=t.eating});
+ S=st;S.t0=Date.now();
+ if(ph!=st.phase){if(st.phase=='results'||st.phase=='final')sfx(st.phase=='final'?'win':'roundend');musicSync()}
+ if(st.phase=='countdown'&&st.count!=pc)sfx('countdown');
+ if(ph!=st.phase||st.phase=='lobby'||st.phase=='countdown')ui_()});
+s.on('fx',e=>{const p=pos[e.t],ok=e.k=='ok';sfx(ok?'correct':'wrong');if(p&&!p.dying&&!p.hold&&p.anim=='idle')play(p,ok?'happy':'sad')});
 s.on('eat',e=>{const h=pos[e.h],p=pos[e.p];if(!h||!p)return;h.chase=e.p;h.t=e.win?2.5:1.2;
- if(e.win){p.dying=true;p.ghost=S.teams.find(t=>t.id==e.p)}
+ if(e.win){p.dying=true;p.ghost=S.teams.find(t=>t.id==e.p);h.hold=true}
  bn.textContent=e.win?`${e.hn} ate ${e.pn}!`:`${e.pn} escaped ${e.hn}!`;setTimeout(()=>bn.textContent='',3500)});
+// ---- menus ----
 const sel=(id,a,d)=>`<select id=${id}>${a.map(k=>`<option ${k==d?'selected':''}>${k}</option>`).join('')}</select>`;
 function go(){s.emit('config',{teams:+cn.value,slots:+cs.value,quota:+ct.value,mins:+cm.value,rounds:[...document.querySelectorAll('.rd')].map(e=>e.value)})}
 function ui_(){const P=S.phase;
@@ -28,32 +44,54 @@ function ui_(){const P=S.phase;
  else if(P=='results'||P=='final'){const f=P=='final';ui.innerHTML=`<h1 style="font-size:3.2rem;margin:.2em">${S.timeUp?"⏰ Time's up! ":''}${f?'🏆 '+S.board[0].name+' win!':'Round '+(S.round+1)+' results'}</h1><table style="font-size:1.9rem;border-spacing:18px 6px"><tr style="opacity:.7"><td></td><td></td><td>This round</td><td>Total</td></tr>${S.board.map((b,i)=>`<tr style="color:${b.color}"><td>${i+1}</td><td>${b.name}</td><td>+${b.gain}</td><td><b>${b.pts}</b></td></tr>`).join('')}</table>${f?`<button onclick="s.emit('again')">Play again (same settings)</button><button onclick="s.emit('reset')">New setup</button>`:`<button onclick="s.emit('nextround')">Next round: ${S.cfg.rounds[S.round+1]}</button>`}`}
  else ui.innerHTML='';if(P=='setup'){cr.onchange=rsel;rsel()}}
 function rsel(){rs.innerHTML=[...Array(+cr.value)].map((_,i)=>`Round ${i+1} <select class=rd>${S.tags.map(g=>`<option ${g==S.tags[i%S.tags.length]?'selected':''}>${g}</option>`).join('')}</select> `).join('<br>')}
-const rad=t=>Math.min(H*.33,24*Math.sqrt(t.mass));
-function P(t){return pos[t.id]||(pos[t.id]={x:W*(.15+Math.random()*.7),y:H*(.3+Math.random()*.55),vx:(Math.random()-.5)*60,vy:(Math.random()-.5)*60,r:10,ph:Math.random()*9})}
+// ---- art ----
+const img=u=>imgs[u]||(imgs[u]=Object.assign(new Image(),{src:u})),formOf=t=>1+(t.ev>=1)+(t.ev>=3);
+// size curve: small start, big first jump, then gentler growth
+const sz=m=>m<=10?m/10:m<12?1+.6*(m-10)/2:1.6+.5*Math.log(m/12),rad=t=>Math.min(H*.2,H*.055*sz(t.mass));
+function frames(tid,form,anim){const F=MAN.frames;for(let f=form;f>=1;f--)for(const d of[`monster/team${tid}/form${f}`,`monster/form${f}`])for(const a of anim=='idle'?['idle']:[anim,'idle'])
+ if(F[d]&&F[d][a])return{urls:F[d][a],fps:(MAN.fps[d]||{})[a]||12,anim:a,tint:!d.includes('/team')};return null}
+function play(p,a,cb){const fr=frames(p.tid,p.showForm,a);if(fr&&fr.anim==a&&a!='idle'){p.anim=a;p.at=performance.now();p.cb=cb}else if(cb)setTimeout(cb,700)}
+function bg(ts){const d=MAN.frames.background;if(!d)return;const a=Object.keys(d)[0],u=d[a],fps=(MAN.fps.background||{})[a]||4,im=img(u[Math.floor(ts/1000*fps)%u.length]);
+ if(im.complete&&im.naturalWidth){const k=Math.max(W/im.naturalWidth,H/im.naturalHeight),w=im.naturalWidth*k,h=im.naturalHeight*k;x.drawImage(im,(W-w)/2,(H-h)/2,w,h)}}
+function P(t){return pos[t.id]||(pos[t.id]={tid:t.id,x:W*(.15+Math.random()*.7),y:H*(.3+Math.random()*.55),vx:(Math.random()-.5)*60,vy:(Math.random()-.5)*60,r:H*.03,ph:Math.random()*9,anim:'idle',at0:performance.now()-Math.random()*1000,showForm:formOf(t),face:1})}
+function drawMon(t,p,ts){
+ const fr=frames(p.tid,p.showForm,p.anim),loop=p.anim=='idle'||(fr&&fr.anim=='idle');let im=null;
+ if(fr){const n=fr.urls.length,k=Math.floor((ts-(loop?p.at0:p.at))/1000*fr.fps);im=img(fr.urls[loop?k%n:Math.min(k,n-1)]);if(!(im.complete&&im.naturalWidth))im=null}
+ const pop=p.pop?1+.25*Math.sin(Math.PI*Math.min(1,(ts-p.pop)/450)):1,sc=(p.sc==null?1:p.sc)*pop;
+ x.save();x.translate(p.x,p.y);x.rotate(p.rot||0);x.scale(sc,sc);x.globalAlpha=Math.max(0,Math.min(1,p.sc==null?1:p.sc));
+ if(im){const z=p.r*2.5;x.scale(p.face<0?-1:1,1);if(fr.tint)x.filter=`hue-rotate(${(t.id-1)*360/(S.cfg?S.cfg.teams:6)}deg)`;x.drawImage(im,-z/2,-z/2,z,z);x.filter='none'}
+ else{x.fillStyle=t.color;x.beginPath();for(let a=0;a<=6.5;a+=.2){const r=p.r*(1+.06*Math.sin(a*5+ts/300+p.ph));x[a?'lineTo':'moveTo'](Math.cos(a)*r,Math.sin(a)*r)}x.fill();
+  x.fillStyle='#fff';for(const e of[-.3,.3]){x.beginPath();x.arc(e*p.r,-p.r*.2,p.r*.17,0,7);x.fill()}
+  x.fillStyle='#222';for(const e of[-.3,.3]){x.beginPath();x.arc(e*p.r,-p.r*.18,p.r*.08,0,7);x.fill()}}
+ x.restore()}
 function frame(ts){
- const dt=Math.min(.05,(ts-last)/1000);last=ts;x.clearRect(0,0,W,H);
+ const dt=Math.min(.05,(ts-last)/1000);last=ts;x.save();x.clearRect(0,0,W,H);bg(ts);
+ if(ts-shake<400)x.translate((Math.random()-.5)*14,(Math.random()-.5)*14);
  const idle=['setup','lobby','results','final'].includes(S.phase);if(idle)pos={};
  const all=idle?[]:S.teams.slice();
  for(const id in pos)if(pos[id].dying&&!all.find(t=>t.id==id))all.push(pos[id].ghost);
- for(const t of all){const p=P(t);p.r+=(rad(t)-p.r)*dt*3;
-  if(p.chase&&pos[p.chase]){const q=pos[p.chase],dx=q.x-p.x,dy=q.y-p.y,d=Math.hypot(dx,dy)||1;
-   p.x+=dx/d*320*dt;p.y+=dy/d*320*dt;p.t-=dt;
-   if(d<p.r*.5||p.t<0){if(q.dying)delete pos[p.chase];p.chase=null;p.vx=(Math.random()-.5)*60;p.vy=(Math.random()-.5)*60}}
-  else if(!p.dying){p.vx+=(Math.random()-.5)*40*dt;p.vy+=(Math.random()-.5)*40*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;
+ for(const t of all){const p=P(t);if(p.gone)continue;p.r+=(rad(t)-p.r)*dt*3;
+  if(!p.hold)p.showForm=formOf(t);
+  if(p.anim!='idle'){const fr=frames(p.tid,p.showForm,p.anim);if(!fr||fr.anim!=p.anim||(ts-p.at)/1000*fr.fps>=fr.urls.length){p.anim='idle';const cb=p.cb;p.cb=null;cb&&cb()}}
+  if(p.suck){const k=(ts-p.suck)/800,h=pos[p.to];p.sc=Math.max(0,1-k);p.rot=(p.rot||0)+dt*9;if(h){p.x+=(h.x-p.x)*dt*5;p.y+=(h.y-p.y)*dt*5}if(k>=1)p.gone=true}
+  else if(p.chase&&pos[p.chase]){const q=pos[p.chase],dx=q.x-p.x,dy=q.y-p.y,d=Math.hypot(dx,dy)||1;
+   p.x+=dx/d*320*dt;p.y+=dy/d*320*dt;p.t-=dt;if(Math.abs(dx)>1)p.face=dx>0?1:-1;
+   if(d<p.r*.5||p.t<0){p.chase=null;p.vx=(Math.random()-.5)*60;p.vy=(Math.random()-.5)*60;
+    if(q.dying&&!q.suck){q.suck=ts;q.to=p.tid;shake=ts;sfx('chomp');play(p,'eat',()=>{p.hold=false;p.pop=performance.now()})}
+    else if(!q.dying){sfx('wrong');play(p,'sad')}}}
+  else if(!p.dying){p.vx+=(Math.random()-.5)*40*dt;p.vy+=(Math.random()-.5)*40*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;if(Math.abs(p.vx)>2)p.face=p.vx>0?1:-1;
    if(p.x<p.r||p.x>W-p.r)p.vx*=-1;if(p.y<p.r+70||p.y>H-p.r)p.vy*=-1;
    p.x=Math.max(p.r,Math.min(W-p.r,p.x));p.y=Math.max(p.r+70,Math.min(H-p.r,p.y))}
-  x.globalAlpha=p.dying?.65:1;x.fillStyle=t.color;x.beginPath();
-  for(let a=0;a<=6.5;a+=.2){const r=p.r*(1+.06*Math.sin(a*5+ts/300+p.ph));x[a?'lineTo':'moveTo'](p.x+Math.cos(a)*r,p.y+Math.sin(a)*r)}
-  x.fill();x.fillStyle='#fff';
-  for(const e of[-.3,.3]){x.beginPath();x.arc(p.x+e*p.r,p.y-p.r*.2,p.r*.17,0,7);x.fill()}
-  x.fillStyle='#222';for(const e of[-.3,.3]){x.beginPath();x.arc(p.x+e*p.r,p.y-p.r*.18,p.r*.08,0,7);x.fill()}
-  x.globalAlpha=1;x.fillStyle='#fff';x.textAlign='center';x.font='bold 24px system-ui';
-  x.fillText(`${t.name} (${t.n})`,p.x,p.y+p.r+28);
-  if(!p.dying){const f=t.need?t.prog/t.need:0;
-   x.fillStyle='#0006';x.fillRect(p.x-50,p.y-p.r-22,100,10);x.fillStyle=t.eating?'#ffd43b':'#fff';x.fillRect(p.x-50,p.y-p.r-22,100*f,10);
-   x.fillStyle='#fff';x.font='16px system-ui';x.fillText(`✓${t.prog}/${t.need}  👤${t.fin}/${t.n}`,p.x,p.y-p.r-30);
-   if(t.eating){x.font='bold 24px system-ui';x.fillStyle='#ffd43b';x.fillText('VOTING!',p.x,p.y-p.r-52)}}}
- if(S.phase=='playing'){const l=Math.max(0,Math.round(S.left-(Date.now()-S.t0)/1000));x.font='bold 44px system-ui';x.textAlign='right';x.fillStyle=l<30?'#ff6b6b':'#fff';x.fillText(Math.floor(l/60)+':'+String(l%60).padStart(2,'0'),W-20,50);x.textAlign='left';x.fillStyle='#fff';x.font='bold 30px system-ui';x.fillText(`Round ${S.round+1}/${S.cfg.rounds.length}: ${S.cfg.rounds[S.round]}`,20,50)}
+  drawMon(t,p,ts);
+  if(!p.dying){x.globalAlpha=1;x.fillStyle='#fff';x.textAlign='center';x.font='bold 24px system-ui';x.fillText(`${t.name} (${t.n})`,p.x,p.y+p.r*1.25+26);
+   const f=t.need?t.prog/t.need:0,by=p.y-p.r*1.25-22;
+   x.fillStyle='#0006';x.fillRect(p.x-50,by,100,10);x.fillStyle=t.eating?'#ffd43b':'#fff';x.fillRect(p.x-50,by,100*f,10);
+   x.fillStyle='#fff';x.font='16px system-ui';x.fillText(`✓${t.prog}/${t.need}  👤${t.fin}/${t.n}`,p.x,by-8);
+   if(t.eating){x.font='bold 24px system-ui';x.fillStyle='#ffd43b';x.fillText('VOTING!',p.x,by-30)}}}
+ for(const id in pos)if(pos[id].gone)delete pos[id];
+ x.restore();
+ if(S.phase=='playing'){const l=Math.max(0,Math.round(S.left-(Date.now()-S.t0)/1000));x.font='bold 44px system-ui';x.textAlign='right';x.fillStyle=l<30?'#ff6b6b':'#fff';x.fillText(Math.floor(l/60)+':'+String(l%60).padStart(2,'0'),W-20,50);
+  x.textAlign='left';x.fillStyle='#fff';x.font='bold 30px system-ui';x.fillText(`Round ${S.round+1}/${S.cfg.rounds.length}: ${S.cfg.rounds[S.round]}`,20,50)}
  requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 </script>
