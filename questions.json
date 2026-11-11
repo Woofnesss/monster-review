@@ -1,10 +1,442 @@
 [
-{"tag":"Present simple","q":"I ___ to school every day.","o":["go","goes","going","went"],"a":0},
-{"tag":"Present continuous","q":"She ___ a book now.","o":["read","is reading","reads","readed"],"a":1},
-{"tag":"Past simple","q":"Yesterday, we ___ soccer.","o":["play","plays","played","playing"],"a":2},
-{"tag":"Superlatives","q":"This is the ___ building in my town.","o":["tall","taller","tallest","most tall"],"a":2},
-{"tag":"Present perfect","q":"I have ___ been to Kyoto.","o":["ever","never","yesterday","ago"],"a":1},
-{"tag":"Passive","q":"The window ___ by Ken.","o":["broke","was broken","breaks","is break"],"a":1},
-{"tag":"Vocabulary","q":"What is the opposite of 'difficult'?","o":["easy","heavy","late","cold"],"a":0},
-{"tag":"Infinitives","q":"I want something ___ drink.","o":["for","to","of","at"],"a":1}
+{
+"tag": "Comparatives (-er)",
+"q": "Ken is ___ than Tom.",
+"o": [
+"more tall",
+"tall",
+"taller",
+"tallest"
+],
+"a": 2
+},
+{
+"tag": "Comparatives (-er)",
+"q": "My bag is ___ than your bag.",
+"o": [
+"heavy",
+"heaviest",
+"more heavy",
+"heavier"
+],
+"a": 3
+},
+{
+"tag": "Comparatives (-er)",
+"q": "Your dog is ___ than my dog.",
+"o": [
+"biger",
+"bigger",
+"more big",
+"bigest"
+],
+"a": 1
+},
+{
+"tag": "Comparatives (-er)",
+"q": "A cheetah is ___ than a horse.",
+"o": [
+"more fast",
+"fastest",
+"faster",
+"fast"
+],
+"a": 2
+},
+{
+"tag": "Comparatives (-er)",
+"q": "Math is ___ than English for me.",
+"o": [
+"easiest",
+"easier",
+"easy",
+"more easy"
+],
+"a": 1
+},
+{
+"tag": "Comparatives (-er)",
+"q": "Mt. Fuji is ___ than Mt. Daisen.",
+"o": [
+"highest",
+"more high",
+"higher",
+"high"
+],
+"a": 2
+},
+{
+"tag": "Comparatives (-er)",
+"q": "Today is ___ than yesterday.",
+"o": [
+"hot",
+"more hot",
+"hottest",
+"hotter"
+],
+"a": 3
+},
+{
+"tag": "Comparatives (-er)",
+"q": "My brother is two years ___ than me.",
+"o": [
+"more young",
+"younger",
+"youngest",
+"young"
+],
+"a": 1
+},
+{
+"tag": "Comparatives (-er)",
+"q": "This river is ___ than that river.",
+"o": [
+"long",
+"longest",
+"longer",
+"more long"
+],
+"a": 2
+},
+{
+"tag": "Comparatives (-er)",
+"q": "Ann gets up ___ than her sister.",
+"o": [
+"early",
+"more early",
+"earliest",
+"earlier"
+],
+"a": 3
+},
+{
+"tag": "Superlatives (-est)",
+"q": "Ken is the ___ boy in my class.",
+"o": [
+"most tall",
+"tallest",
+"taller",
+"tall"
+],
+"a": 1
+},
+{
+"tag": "Superlatives (-est)",
+"q": "This is the ___ building in town.",
+"o": [
+"most old",
+"older",
+"old",
+"oldest"
+],
+"a": 3
+},
+{
+"tag": "Superlatives (-est)",
+"q": "Who is the ___ runner in your class?",
+"o": [
+"most fast",
+"fast",
+"fastest",
+"faster"
+],
+"a": 2
+},
+{
+"tag": "Superlatives (-est)",
+"q": "Mt. Fuji is the ___ mountain in Japan.",
+"o": [
+"higher",
+"most high",
+"highest",
+"high"
+],
+"a": 2
+},
+{
+"tag": "Superlatives (-est)",
+"q": "Summer is the ___ season in Japan.",
+"o": [
+"hoter",
+"most hot",
+"hotest",
+"hottest"
+],
+"a": 3
+},
+{
+"tag": "Superlatives (-est)",
+"q": "He is the youngest child ___ his family.",
+"o": [
+"in",
+"of",
+"at",
+"for"
+],
+"a": 0
+},
+{
+"tag": "Superlatives (-est)",
+"q": "This is the ___ question in the test.",
+"o": [
+"easiest",
+"most easy",
+"easier",
+"easy"
+],
+"a": 0
+},
+{
+"tag": "Superlatives (-est)",
+"q": "Lake Biwa is the ___ lake in Japan.",
+"o": [
+"most large",
+"largest",
+"larger",
+"large"
+],
+"a": 1
+},
+{
+"tag": "Superlatives (-est)",
+"q": "Tom is the tallest ___ the three boys.",
+"o": [
+"on",
+"of",
+"at",
+"in"
+],
+"a": 1
+},
+{
+"tag": "Superlatives (-est)",
+"q": "Ken is the fastest runner ___ our class.",
+"o": [
+"for",
+"of",
+"at",
+"in"
+],
+"a": 3
+},
+{
+"tag": "as ... as",
+"q": "I am as ___ as my brother.",
+"o": [
+"tall",
+"tallest",
+"taller",
+"more tall"
+],
+"a": 0
+},
+{
+"tag": "as ... as",
+"q": "This bag is as ___ as that bag.",
+"o": [
+"heavier",
+"heavy",
+"more heavy",
+"heaviest"
+],
+"a": 1
+},
+{
+"tag": "as ... as",
+"q": "Ken is ___ tall as Tom.",
+"o": [
+"most",
+"than",
+"more",
+"as"
+],
+"a": 3
+},
+{
+"tag": "as ... as",
+"q": "My dog is as big ___ your dog.",
+"o": [
+"to",
+"as",
+"of",
+"than"
+],
+"a": 1
+},
+{
+"tag": "as ... as",
+"q": "Ken can run as ___ as Taro.",
+"o": [
+"fastest",
+"fast",
+"faster",
+"more fast"
+],
+"a": 1
+},
+{
+"tag": "as ... as",
+"q": "This book is not as ___ as that one.",
+"o": [
+"interest",
+"more interesting",
+"most interesting",
+"interesting"
+],
+"a": 3
+},
+{
+"tag": "as ... as",
+"q": "Tom isn't as ___ as his brother.",
+"o": [
+"old",
+"older",
+"more old",
+"oldest"
+],
+"a": 0
+},
+{
+"tag": "as ... as",
+"q": "I get up as ___ as my mother.",
+"o": [
+"early",
+"earlier",
+"earliest",
+"more early"
+],
+"a": 0
+},
+{
+"tag": "as ... as",
+"q": "Is this box as ___ as that box?",
+"o": [
+"largest",
+"larger",
+"more large",
+"large"
+],
+"a": 3
+},
+{
+"tag": "as ... as",
+"q": "Ken is 15. Tom is 15. = Ken is as old ___ Tom.",
+"o": [
+"than",
+"as",
+"to",
+"with"
+],
+"a": 1
+},
+{
+"tag": "Mixed review",
+"q": "Mt. Fuji is higher ___ Mt. Daisen.",
+"o": [
+"in",
+"as",
+"of",
+"than"
+],
+"a": 3
+},
+{
+"tag": "Mixed review",
+"q": "This is the ___ book of the three.",
+"o": [
+"most interesting",
+"interesting",
+"more interesting",
+"interestinger"
+],
+"a": 0
+},
+{
+"tag": "Mixed review",
+"q": "I am as old ___ Ken.",
+"o": [
+"to",
+"than",
+"as",
+"of"
+],
+"a": 2
+},
+{
+"tag": "Mixed review",
+"q": "My sister is ___ than me.",
+"o": [
+"tallest",
+"most tall",
+"taller",
+"as tall"
+],
+"a": 2
+},
+{
+"tag": "Mixed review",
+"q": "He is the ___ student in our class.",
+"o": [
+"taller",
+"tall",
+"tallest",
+"as tall"
+],
+"a": 2
+},
+{
+"tag": "Mixed review",
+"q": "Ken is not as fast ___ Tom.",
+"o": [
+"than",
+"more",
+"as",
+"so"
+],
+"a": 2
+},
+{
+"tag": "Mixed review",
+"q": "She is ___ than her mother.",
+"o": [
+"younger",
+"young",
+"youngest",
+"as young"
+],
+"a": 0
+},
+{
+"tag": "Mixed review",
+"q": "Tom is the ___ of the three boys.",
+"o": [
+"old",
+"older",
+"as old",
+"oldest"
+],
+"a": 3
+},
+{
+"tag": "Mixed review",
+"q": "This test was as ___ as the last one.",
+"o": [
+"difficult",
+"more difficult",
+"most difficult",
+"difficulter"
+],
+"a": 0
+},
+{
+"tag": "Mixed review",
+"q": "My bag is ___ than yours.",
+"o": [
+"heavier",
+"more heavy",
+"heaviest",
+"heavyer"
+],
+"a": 0
+}
 ]
