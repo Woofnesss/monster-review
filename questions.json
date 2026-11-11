@@ -1,10 +1,10 @@
 [
-{"q":"I ___ to school every day.","o":["go","goes","going","went"],"a":0},
-{"q":"She ___ a book now.","o":["read","is reading","reads","readed"],"a":1},
-{"q":"Yesterday, we ___ soccer.","o":["play","plays","played","playing"],"a":2},
-{"q":"This is the ___ building in my town.","o":["tall","taller","tallest","most tall"],"a":2},
-{"q":"I have ___ been to Kyoto.","o":["ever","never","yesterday","ago"],"a":1},
-{"q":"The window ___ by Ken.","o":["broke","was broken","breaks","is break"],"a":1},
-{"q":"What is the opposite of 'difficult'?","o":["easy","heavy","late","cold"],"a":0},
-{"q":"I want something ___ drink.","o":["for","to","of","at"],"a":1}
+{"tag":"Present simple","q":"I ___ to school every day.","o":["go","goes","going","went"],"a":0},
+{"tag":"Present continuous","q":"She ___ a book now.","o":["read","is reading","reads","readed"],"a":1},
+{"tag":"Past simple","q":"Yesterday, we ___ soccer.","o":["play","plays","played","playing"],"a":2},
+{"tag":"Superlatives","q":"This is the ___ building in my town.","o":["tall","taller","tallest","most tall"],"a":2},
+{"tag":"Present perfect","q":"I have ___ been to Kyoto.","o":["ever","never","yesterday","ago"],"a":1},
+{"tag":"Passive","q":"The window ___ by Ken.","o":["broke","was broken","breaks","is break"],"a":1},
+{"tag":"Vocabulary","q":"What is the opposite of 'difficult'?","o":["easy","heavy","late","cold"],"a":0},
+{"tag":"Infinitives","q":"I want something ___ drink.","o":["for","to","of","at"],"a":1}
 ]
