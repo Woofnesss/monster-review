@@ -12,10 +12,10 @@ button:disabled{opacity:.35}
 <script src=/socket.io/socket.io.js></script>
 <script>
 const s=io(),m=document.getElementById('m'),tp=document.getElementById('tp'),fill=document.getElementById('fill');
-let S={teams:[],phase:'setup'},me=null,cur=null,locked=false,mode='',joined=false;
+let S={teams:[],phase:'setup'},me=null,og=null,cur=null,locked=false,mode='',joined=false;
 m.innerHTML=`<h1>Join the game</h1><input id=nm placeholder="Your name"><br><button onclick="join()">Join</button>`;
 function join(){const n=nm.value.trim();if(!n)return;joined=true;s.emit('join',n)}
-s.on('you',id=>me=id);
+s.on('you',id=>me=id);s.on('orig',id=>og=id);
 s.on('state',st=>{S=st;draw()});
 function clear_(){tp.innerHTML='';fill.style.width=0}
 function draw(){
@@ -23,13 +23,14 @@ function draw(){
  if(P=='setup'){mode='';me=null;clear_();m.innerHTML='<h2>Waiting for the teacher…</h2>';return}
  if(P=='lobby'){mode='';clear_();
   m.innerHTML='<h2>Pick your team</h2>'+S.teams.map(o=>`<button ${o.n>=S.cfg.slots&&o.id!=me?'disabled':''} style="background:${o.color};${o.id==me?'outline:5px solid #fff':''}" onclick="s.emit('pick',${o.id})">${o.name} (${o.n}/${S.cfg.slots})<br><small>${o.names.join(', ')}</small></button>`).join('')+'<p>Waiting for the teacher to start…</p>';return}
+ if(P=='results'||P=='final'){mode='';clear_();m.innerHTML=(P=='final'?'<h1>🏆 '+S.board[0].name+' win!</h1>':'<h1>Round '+(S.round+1)+' done'+(S.timeUp?' ⏰':'')+'</h1>')+S.board.map((b,i)=>`<p style="font-size:1.3rem;margin:.3em;color:${b.color};${b.id==og?'outline:3px solid #fff;border-radius:8px':''}">${i+1}. ${b.name} · ${b.pts} pts (+${b.gain})</p>`).join('')+(P=='final'?'':'<p>Waiting for the teacher…</p>');return}
  const t=S.teams.find(t=>t.id==me);if(!t)return;
  tp.innerHTML=`<h2 style="color:${t.color};margin:.2em">${t.name}</h2><small>Team ${t.prog}/${t.need} correct · ${t.fin}/${t.n} players finished</small>`;
  fill.style.background=t.color;fill.style.width=100*(t.need?t.prog/t.need:0)+'%';
- if(P=='countdown'){mode='cd';m.innerHTML=`<h1 style="font-size:7rem;margin:.2em">${S.count}</h1><p>Get ready!</p>`;return}
+ if(P=='countdown'){mode='cd';m.innerHTML=`<h1 style="font-size:7rem;margin:.2em">${S.count}</h1><p>Round ${S.round+1}: ${S.cfg.rounds[S.round]}</p>`;return}
  const md=P=='done'?'done':t.eating?'eat':Math.min(t.done[s.id]||0,S.cfg.quota)>=S.cfg.quota?'wait':'q';
  if(md==mode&&md!='eat'&&md!='wait')return;mode=md;
- if(md=='done')m.innerHTML='<h1>🏆 One giant monster! Everyone wins together!</h1>';
+ if(md=='done')m.innerHTML=S.timeUp?`<h1>⏰ Time's up!</h1><h2>🏆 ${S.teams[0].name} is the biggest!</h2>`:'<h1>🏆 One giant monster! Everyone wins together!</h1>';
  else if(md=='eat'){const cnt=id=>Object.values(t.votes).filter(v=>v==id).length;
   m.innerHTML=`<h1>🍽 Time to EAT!</h1><h3>Back to your seat and vote!</h3><p>Vote for a monster to eat. The most votes wins. Bigger monsters win!</p>`+S.teams.filter(o=>o.id!=me).map(o=>`<button style="background:${o.color};${t.votes[s.id]==o.id?'outline:5px solid #fff':''}" onclick="s.emit('vote',${o.id})">${o.name} (size ${Math.round(o.mass)}) · ${cnt(o.id)} votes</button>`).join('')+`<p>Your size: ${Math.round(t.mass)}</p>`}
  else if(md=='wait')m.innerHTML=`<h1>✅ ${S.cfg.quota} correct!</h1><h2>Help your teammates!</h2>`+t.ids.map((id,i)=>`<p style="font-size:1.3rem;margin:.2em">${(t.done[id]||0)>=S.cfg.quota?'✅':'⏳'} ${t.names[i]}</p>`).join('')+'<p>When everyone is done, come back and vote!</p>';
