@@ -7,7 +7,9 @@ function manifest(){const m={frames:{},fps:{},audio:{}},root=path.join(__dirname
   for(const e of es){const f=path.join(d,e.name);if(e.isDirectory()){walk(f);continue}
    const rel=path.relative(root,f).split(path.sep),dir=rel.slice(0,-1).join('/'),b=e.name,ext=path.extname(b).slice(1).toLowerCase(),stem=b.slice(0,b.length-ext.length-1),url=encodeURI('/assets/'+rel.join('/'));
    if(b.toLowerCase()=='fps.txt'){m.fps[dir]={};fs.readFileSync(f,'utf8').split(/\r?\n/).forEach(l=>{const[a,n]=l.trim().split(/\s+/);if(a&&+n>0)m.fps[dir][a]=+n})}
-   else if(['png','webp','jpg','jpeg','gif'].includes(ext)){const mt=stem.match(/^(.*?)[_-]?(\d+)$/);if(!mt)continue;const a=mt[1]||'frame';(m.frames[dir]=m.frames[dir]||{});(m.frames[dir][a]=m.frames[dir][a]||[]).push([+mt[2],url])}
+   else if(['png','webp','jpg','jpeg','gif'].includes(ext)){const mt=stem.match(/^(.*?)[_-]?(\d+)$/);if(!mt)continue;let a=mt[1]||'frame',d=dir;
+    if(a=='frame'&&rel.length>=3){a=rel[rel.length-2].toLowerCase();d=rel.slice(0,-2).join('/')}
+    (m.frames[d]=m.frames[d]||{});(m.frames[d][a]=m.frames[d][a]||[]).push([+mt[2],url])}
    else if(['mp3','ogg','wav','m4a'].includes(ext))m.audio[dir+'/'+stem]=url}})(root);
  for(const d in m.frames)for(const a in m.frames[d])m.frames[d][a]=m.frames[d][a].sort((x,y)=>x[0]-y[0]).map(v=>v[1]);
  return m}
