@@ -54,12 +54,39 @@ function play(p,a,cb){const fr=frames(p.tid,p.showForm,a);if(fr&&fr.anim==a&&a!=
 function bg(ts){const d=MAN.frames.background;if(!d)return;const a=Object.keys(d)[0],u=d[a],fps=(MAN.fps.background||{})[a]||4,im=img(u[Math.floor(ts/1000*fps)%u.length]);
  if(im.complete&&im.naturalWidth){const k=Math.max(W/im.naturalWidth,H/im.naturalHeight),w=im.naturalWidth*k,h=im.naturalHeight*k;x.drawImage(im,(W-w)/2,(H-h)/2,w,h)}}
 function P(t){return pos[t.id]||(pos[t.id]={tid:t.id,x:W*(.15+Math.random()*.7),y:H*(.3+Math.random()*.55),vx:(Math.random()-.5)*60,vy:(Math.random()-.5)*60,r:H*.03,ph:Math.random()*9,anim:'idle',at0:performance.now()-Math.random()*1000,showForm:formOf(t),face:1})}
+// ---- line-art fill: black outline art gets its closed areas filled with the team colour ----
+const BODY=.52; // fraction of the canvas the monster's body fills (measured from the idle frame)
+const LA={},TC=document.createElement('canvas'),T=TC.getContext('2d');TC.width=TC.height=384;
+const shade=(h,k)=>'#'+[1,3,5].map(i=>Math.round(parseInt(h.substr(i,2),16)*k).toString(16).padStart(2,'0')).join('');
+function flood(al,N){const ink=new Uint8Array(N*N),lab=new Int32Array(N*N),st=new Int32Array(N*N),sizes=[0],bd=new Set();let n=0;
+ for(let i=0;i<N*N;i++)ink[i]=al[i]>40?1:0;
+ for(let i=0;i<N*N;i++){if(ink[i]||lab[i])continue;n++;let sp=0,sz=0,tb=false;st[sp++]=i;lab[i]=n;
+  while(sp){const j=st[--sp],cx=j%N,cy=(j-cx)/N;sz++;if(cx==0||cy==0||cx==N-1||cy==N-1)tb=true;
+   if(cx>0&&!ink[j-1]&&!lab[j-1]){lab[j-1]=n;st[sp++]=j-1}if(cx<N-1&&!ink[j+1]&&!lab[j+1]){lab[j+1]=n;st[sp++]=j+1}
+   if(cy>0&&!ink[j-N]&&!lab[j-N]){lab[j-N]=n;st[sp++]=j-N}if(cy<N-1&&!ink[j+N]&&!lab[j+N]){lab[j+N]=n;st[sp++]=j+N}}
+  sizes[n]=sz;if(tb)bd.add(n)}
+ let bi=0;for(let k=1;k<=n;k++)if(!bd.has(k)&&sizes[k]>(sizes[bi]||0))bi=k;
+ if(!bi||sizes[bi]<N*N*.01)return null;
+ const body=new Uint8Array(N*N),hole=new Uint8Array(N*N);let any=false;
+ for(let i=0;i<N*N;i++){const l=lab[i];if(!l||bd.has(l))continue;if(l==bi||sizes[l]<20)body[i]=1;else{hole[i]=1;any=true}}
+ return{body,hole:any?hole:null}}
+function maskCv(m,N){const c2=document.createElement('canvas');c2.width=c2.height=N;const g=c2.getContext('2d'),d=g.createImageData(N,N);
+ for(let i=0;i<N*N;i++)if(m[i]){d.data[i*4]=d.data[i*4+1]=d.data[i*4+2]=d.data[i*4+3]=255}g.putImageData(d,0,0);return c2}
+function lineArt(im){const k=im.src;if(k in LA)return LA[k];const N=384,c2=document.createElement('canvas');c2.width=c2.height=N;const g=c2.getContext('2d');g.drawImage(im,0,0,N,N);
+ let d;try{d=g.getImageData(0,0,N,N).data}catch(e){return LA[k]=null}
+ const al=new Uint8Array(N*N);let cnt=0,col=0;
+ for(let i=0;i<N*N;i++){const a=d[i*4+3];al[i]=a;if(a>128){cnt++;const r=d[i*4],g2=d[i*4+1],b=d[i*4+2];if(Math.max(r,g2,b)-Math.min(r,g2,b)>40)col++}}
+ if(!cnt||col>cnt*.02)return LA[k]=null; // coloured art -> hue shift instead
+ const f=flood(al,N);return LA[k]={f:f&&{body:maskCv(f.body,N),hole:f.hole&&maskCv(f.hole,N)}}}
+function tinted(src,col,z){T.globalCompositeOperation='source-over';T.clearRect(0,0,384,384);T.drawImage(src,0,0,384,384);T.globalCompositeOperation='source-in';T.fillStyle=col;T.fillRect(0,0,384,384);x.drawImage(TC,-z/2,-z/2,z,z)}
 function drawMon(t,p,ts){
  const fr=frames(p.tid,p.showForm,p.anim),loop=p.anim=='idle'||(fr&&fr.anim=='idle');let im=null;
  if(fr){const n=fr.urls.length,k=Math.floor((ts-(loop?p.at0:p.at))/1000*fr.fps);im=img(fr.urls[loop?k%n:Math.min(k,n-1)]);if(!(im.complete&&im.naturalWidth))im=null}
  const pop=p.pop?1+.25*Math.sin(Math.PI*Math.min(1,(ts-p.pop)/450)):1,sc=(p.sc==null?1:p.sc)*pop;
  x.save();x.translate(p.x,p.y);x.rotate(p.rot||0);x.scale(sc,sc);x.globalAlpha=Math.max(0,Math.min(1,p.sc==null?1:p.sc));
- if(im){const z=p.r*2.5;x.scale(p.face<0?-1:1,1);if(fr.tint)x.filter=`hue-rotate(${(t.id-1)*360/(S.cfg?S.cfg.teams:6)}deg)`;x.drawImage(im,-z/2,-z/2,z,z);x.filter='none'}
+ if(im){const z=p.r*2/BODY,la=fr.tint?lineArt(im):null;x.scale(p.face<0?-1:1,1);
+  if(la){if(la.f){tinted(la.f.body,t.color,z);if(la.f.hole)tinted(la.f.hole,shade(t.color,.45),z);x.drawImage(im,-z/2,-z/2,z,z)}else tinted(im,t.color,z)}
+  else{if(fr.tint)x.filter=`hue-rotate(${(t.id-1)*360/(S.cfg?S.cfg.teams:6)}deg)`;x.drawImage(im,-z/2,-z/2,z,z);x.filter='none'}}
  else{x.fillStyle=t.color;x.beginPath();for(let a=0;a<=6.5;a+=.2){const r=p.r*(1+.06*Math.sin(a*5+ts/300+p.ph));x[a?'lineTo':'moveTo'](Math.cos(a)*r,Math.sin(a)*r)}x.fill();
   x.fillStyle='#fff';for(const e of[-.3,.3]){x.beginPath();x.arc(e*p.r,-p.r*.2,p.r*.17,0,7);x.fill()}
   x.fillStyle='#222';for(const e of[-.3,.3]){x.beginPath();x.arc(e*p.r,-p.r*.18,p.r*.08,0,7);x.fill()}}
