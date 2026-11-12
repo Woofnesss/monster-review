@@ -14,7 +14,7 @@ button{background:#ffd43b;cursor:pointer;font-weight:700;padding:.5em 1.2em}
 <script>
 const s=io(),c=document.getElementById('c'),x=c.getContext('2d'),ui=document.getElementById('ui'),bn=document.getElementById('bn'),mus=new Audio();
 let S={phase:'',teams:[],np:0,tags:[]},pos={},W,H,last=0,MAN={frames:{},fps:{},audio:{}},vol=.7,muted=false,trk='',lastSfx={},shake=-1e9,imgs={},prevE={};
-fetch('/assets.json').then(r=>r.json()).then(m=>MAN=m).catch(()=>{});
+fetch('/assets.json').then(r=>r.json()).then(m=>{MAN=m;preload()}).catch(()=>{});
 const size=()=>{W=c.width=innerWidth;H=c.height=innerHeight};size();onresize=size;
 s.emit('host');
 // ---- sound ----
@@ -45,7 +45,7 @@ function ui_(){const P=S.phase;
  else ui.innerHTML='';if(P=='setup'){cr.onchange=rsel;rsel()}}
 function rsel(){rs.innerHTML=[...Array(+cr.value)].map((_,i)=>`Round ${i+1} <select class=rd>${S.tags.map(g=>`<option ${g==S.tags[i%S.tags.length]?'selected':''}>${g}</option>`).join('')}</select> `).join('<br>')}
 // ---- art ----
-const img=u=>imgs[u]||(imgs[u]=Object.assign(new Image(),{src:u})),formOf=t=>1+(t.ev>=1)+(t.ev>=3);
+const img=u=>imgs[u]||(imgs[u]=Object.assign(new Image(),{src:u,onerror(){this.bad=1}})),formOf=t=>1+(t.ev>=1)+(t.ev>=3);
 // size curve: small start, big first jump, then gentler growth
 const sz=m=>m<=10?m/10:m<12?1+.6*(m-10)/2:1.6+.5*Math.log(m/12),rad=t=>Math.min(H*.2,H*.055*sz(t.mass));
 function frames(tid,form,anim){const F=MAN.frames;for(let f=form;f>=1;f--)for(const d of[`monster/team${tid}/form${f}`,`monster/form${f}`])for(const a of anim=='idle'?['idle']:[anim,'idle'])
@@ -54,6 +54,8 @@ function play(p,a,cb){const fr=frames(p.tid,p.showForm,a);if(fr&&fr.anim==a&&a!=
 function bg(ts){const d=MAN.frames.background;if(!d)return;const a=Object.keys(d)[0],u=d[a],fps=(MAN.fps.background||{})[a]||4,im=img(u[Math.floor(ts/1000*fps)%u.length]);
  if(im.complete&&im.naturalWidth){const k=Math.max(W/im.naturalWidth,H/im.naturalHeight),w=im.naturalWidth*k,h=im.naturalHeight*k;x.drawImage(im,(W-w)/2,(H-h)/2,w,h)}}
 function P(t){return pos[t.id]||(pos[t.id]={tid:t.id,x:W*(.15+Math.random()*.7),y:H*(.3+Math.random()*.55),vx:(Math.random()-.5)*60,vy:(Math.random()-.5)*60,r:H*.03,ph:Math.random()*9,anim:'idle',at0:performance.now()-Math.random()*1000,showForm:formOf(t),face:1})}
+function preload(){for(const d in MAN.frames)for(const a in MAN.frames[d])MAN.frames[d][a].forEach(u=>{const e=img(u);
+ if(d.indexOf('monster')==0){if(e.complete&&e.naturalWidth)lineArt(e);else e.addEventListener('load',()=>lineArt(e))}})}
 // ---- line-art fill: black outline art gets its closed areas filled with the team colour ----
 const BODY=.52; // fraction of the canvas the monster's body fills (measured from the idle frame)
 const LA={},TC=document.createElement('canvas'),T=TC.getContext('2d');TC.width=TC.height=384;
@@ -81,7 +83,8 @@ function lineArt(im){const k=im.src;if(k in LA)return LA[k];const N=384,c2=docum
 function tinted(src,col,z){T.globalCompositeOperation='source-over';T.clearRect(0,0,384,384);T.drawImage(src,0,0,384,384);T.globalCompositeOperation='source-in';T.fillStyle=col;T.fillRect(0,0,384,384);x.drawImage(TC,-z/2,-z/2,z,z)}
 function drawMon(t,p,ts){
  const fr=frames(p.tid,p.showForm,p.anim),loop=p.anim=='idle'||(fr&&fr.anim=='idle');let im=null;
- if(fr){const n=fr.urls.length,k=Math.floor((ts-(loop?p.at0:p.at))/1000*fr.fps);im=img(fr.urls[loop?k%n:Math.min(k,n-1)]);if(!(im.complete&&im.naturalWidth))im=null}
+ if(fr){const n=fr.urls.length,k=Math.floor((ts-(loop?p.at0:p.at))/1000*fr.fps),e=img(fr.urls[loop?k%n:Math.min(k,n-1)]);
+  if(e.complete&&e.naturalWidth)im=e;else if(!e.bad)return} // still loading: draw nothing (no blob flash)
  const pop=p.pop?1+.25*Math.sin(Math.PI*Math.min(1,(ts-p.pop)/450)):1,sc=(p.sc==null?1:p.sc)*pop;
  x.save();x.translate(p.x,p.y);x.rotate(p.rot||0);x.scale(sc,sc);x.globalAlpha=Math.max(0,Math.min(1,p.sc==null?1:p.sc));
  if(im){const z=p.r*2/BODY,la=fr.tint?lineArt(im):null;x.scale(p.face<0?-1:1,1);
