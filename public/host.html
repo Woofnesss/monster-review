@@ -1,18 +1,18 @@
 <!doctype html><meta charset=utf-8><title>Monster Review</title>
 <style>
-body{margin:0;background:#1b1f3b;color:#fff;font-family:system-ui,sans-serif;overflow:hidden}
+body{margin:0;background:#fff;color:#222;font-family:system-ui,sans-serif;overflow:hidden}
 canvas{display:block;width:100vw;height:100vh}
 #ui{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}
 #ui>*{pointer-events:auto}
 button,select{font-size:1.4rem;padding:.4em .8em;border-radius:12px;border:0;margin:.3em}
 button{background:#ffd43b;cursor:pointer;font-weight:700;padding:.5em 1.2em}
-#bn{position:fixed;top:14px;width:100%;text-align:center;font-size:2.4rem;font-weight:800;text-shadow:0 2px 6px #000}
+#bn{position:fixed;top:14px;width:100%;text-align:center;font-size:2.4rem;font-weight:800;text-shadow:0 0 8px #fff,0 0 3px #fff}
 </style>
 <canvas id=c></canvas><div id=bn></div><div id=ui></div>
 <div style="position:fixed;right:10px;bottom:10px;opacity:.75"><button id=mb style="font-size:1.1rem;padding:.2em .5em;margin:0" onclick="muted=!muted;mb.textContent=muted?'🔇':'🔊';musicSync()">🔊</button> <input type=range min=0 max=100 value=70 oninput="vol=this.value/100;musicSync()" style="vertical-align:middle"></div>
 <script src=/socket.io/socket.io.js></script>
 <script>
-const s=io(),c=document.getElementById('c'),x=c.getContext('2d'),ui=document.getElementById('ui'),bn=document.getElementById('bn'),mus=new Audio();
+const s=io(),c=document.getElementById('c'),x=c.getContext('2d'),INK='#222',ui=document.getElementById('ui'),bn=document.getElementById('bn'),mus=new Audio();
 let S={phase:'',teams:[],np:0,tags:[]},pos={},W,H,last=0,MAN={frames:{},fps:{},audio:{}},vol=.7,muted=false,trk='',lastSfx={},shake=-1e9,imgs={},prevE={};
 fetch('/assets.json').then(r=>r.json()).then(m=>{MAN=m;preload()}).catch(()=>{});
 const size=()=>{W=c.width=innerWidth;H=c.height=innerHeight};size();onresize=size;
@@ -41,7 +41,7 @@ function ui_(){const P=S.phase;
  if(P=='setup')ui.innerHTML=`<h1 style="font-size:3rem">Game setup</h1><p style="font-size:1.5rem">Teams ${sel('cn',[2,3,4,5,6,7,8],4)} Players per team ${sel('cs',[1,2,3,4,5,6,7,8,9,10],4)} Correct answers per student ${sel('ct',[1,2,3,4,5],2)} Round length (min) ${sel('cm',[3,5,6,7,8,10,12,15],8)}</p><p style="font-size:1.4rem">Rounds ${sel('cr',[1,2,3,4,5,6],4)}</p><div id=rs style="font-size:1.3rem"></div><button onclick="go()">Open lobby</button>`;
  else if(P=='lobby')ui.innerHTML=`<h1 style="font-size:3rem;margin:.2em">Pick a team on your Chromebook</h1><img src="/qr.svg?u=${encodeURIComponent(location.origin+'/play.html')}" style="width:190px;background:#fff;border-radius:12px;margin:.4em"><p style="font-size:1.4rem;margin:0">Scan, or go to ${location.host}/play.html · ${S.np} joined</p><div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:90vw;margin:1rem">${S.teams.map(t=>`<div style="background:${t.color};color:#222;border-radius:16px;padding:12px 18px;min-width:180px"><b style="font-size:1.5rem">${t.name} ${t.n}/${S.cfg.slots}</b><br>${t.names.join(', ')||'&nbsp;'}</div>`).join('')}</div><button onclick="s.emit('start')">Start</button>`;
  else if(P=='countdown')ui.innerHTML=`<h1 style="font-size:12rem;margin:0">${S.count}</h1><h2 style="font-size:2.4rem">Round ${S.round+1}: ${S.cfg.rounds[S.round]}</h2>`;
- else if(P=='results'||P=='final'){const f=P=='final';ui.innerHTML=`<h1 style="font-size:3.2rem;margin:.2em">${S.timeUp?"⏰ Time's up! ":''}${f?'🏆 '+S.board[0].name+' win!':'Round '+(S.round+1)+' results'}</h1><table style="font-size:1.9rem;border-spacing:18px 6px"><tr style="opacity:.7"><td></td><td></td><td>This round</td><td>Total</td></tr>${S.board.map((b,i)=>`<tr style="color:${b.color}"><td>${i+1}</td><td>${b.name}</td><td>+${b.gain}</td><td><b>${b.pts}</b></td></tr>`).join('')}</table>${f?`<button onclick="s.emit('again')">Play again (same settings)</button><button onclick="s.emit('reset')">New setup</button>`:`<button onclick="s.emit('nextround')">Next round: ${S.cfg.rounds[S.round+1]}</button>`}`}
+ else if(P=='results'||P=='final'){const f=P=='final';ui.innerHTML=`<h1 style="font-size:3.2rem;margin:.2em">${S.timeUp?"⏰ Time's up! ":''}${f?'🏆 '+S.board[0].name+' win!':'Round '+(S.round+1)+' results'}</h1><table style="font-size:1.9rem;border-spacing:18px 6px"><tr style="opacity:.7"><td></td><td></td><td>This round</td><td>Total</td></tr>${S.board.map((b,i)=>`<tr><td>${i+1}</td><td><span style="background:${b.color};padding:.05em .6em;border-radius:14px">${b.name}</span></td><td>+${b.gain}</td><td><b>${b.pts}</b></td></tr>`).join('')}</table>${f?`<button onclick="s.emit('again')">Play again (same settings)</button><button onclick="s.emit('reset')">New setup</button>`:`<button onclick="s.emit('nextround')">Next round: ${S.cfg.rounds[S.round+1]}</button>`}`}
  else ui.innerHTML='';if(P=='setup'){cr.onchange=rsel;rsel()}}
 function rsel(){rs.innerHTML=[...Array(+cr.value)].map((_,i)=>`Round ${i+1} <select class=rd>${S.tags.map(g=>`<option ${g==S.tags[i%S.tags.length]?'selected':''}>${g}</option>`).join('')}</select> `).join('<br>')}
 // ---- art ----
@@ -113,15 +113,15 @@ function frame(ts){
    if(p.x<p.r||p.x>W-p.r)p.vx*=-1;if(p.y<p.r+70||p.y>H-p.r)p.vy*=-1;
    p.x=Math.max(p.r,Math.min(W-p.r,p.x));p.y=Math.max(p.r+70,Math.min(H-p.r,p.y))}
   drawMon(t,p,ts);
-  if(!p.dying){x.globalAlpha=1;x.fillStyle='#fff';x.textAlign='center';x.font='bold 24px system-ui';x.fillText(`${t.name} (${t.n})`,p.x,p.y+p.r*1.25+26);
+  if(!p.dying){x.globalAlpha=1;x.fillStyle=INK;x.textAlign='center';x.font='bold 24px system-ui';x.fillText(`${t.name} (${t.n})`,p.x,p.y+p.r*1.25+26);
    const f=t.need?t.prog/t.need:0,by=p.y-p.r*1.25-22;
-   x.fillStyle='#0006';x.fillRect(p.x-50,by,100,10);x.fillStyle=t.eating?'#ffd43b':'#fff';x.fillRect(p.x-50,by,100*f,10);
-   x.fillStyle='#fff';x.font='16px system-ui';x.fillText(`✓${t.prog}/${t.need}  👤${t.fin}/${t.n}`,p.x,by-8);
-   if(t.eating){x.font='bold 24px system-ui';x.fillStyle='#ffd43b';x.fillText('VOTING!',p.x,by-30)}}}
+   x.fillStyle='#0003';x.fillRect(p.x-50,by,100,10);x.fillStyle=t.eating?'#e67700':'#444';x.fillRect(p.x-50,by,100*f,10);
+   x.fillStyle=INK;x.font='16px system-ui';x.fillText(`✓${t.prog}/${t.need}  👤${t.fin}/${t.n}`,p.x,by-8);
+   if(t.eating){x.font='bold 24px system-ui';x.fillStyle='#e67700';x.fillText('VOTING!',p.x,by-30)}}}
  for(const id in pos)if(pos[id].gone)delete pos[id];
  x.restore();
- if(S.phase=='playing'){const l=Math.max(0,Math.round(S.left-(Date.now()-S.t0)/1000));x.font='bold 44px system-ui';x.textAlign='right';x.fillStyle=l<30?'#ff6b6b':'#fff';x.fillText(Math.floor(l/60)+':'+String(l%60).padStart(2,'0'),W-20,50);
-  x.textAlign='left';x.fillStyle='#fff';x.font='bold 30px system-ui';x.fillText(`Round ${S.round+1}/${S.cfg.rounds.length}: ${S.cfg.rounds[S.round]}`,20,50)}
+ if(S.phase=='playing'){const l=Math.max(0,Math.round(S.left-(Date.now()-S.t0)/1000));x.font='bold 44px system-ui';x.textAlign='right';x.fillStyle=l<30?'#d6336c':INK;x.fillText(Math.floor(l/60)+':'+String(l%60).padStart(2,'0'),W-20,50);
+  x.textAlign='left';x.fillStyle=INK;x.font='bold 30px system-ui';x.fillText(`Round ${S.round+1}/${S.cfg.rounds.length}: ${S.cfg.rounds[S.round]}`,20,50)}
  requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 </script>
