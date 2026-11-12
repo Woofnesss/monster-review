@@ -20,33 +20,38 @@ const COLORS=['#ff6b6b','#4dabf7','#51cf66','#fcc419','#cc5de8','#ff922b','#20c9
 const NAMES=['Red','Blue','Green','Yellow','Purple','Orange','Teal','Pink']; // same order as COLORS
 // ---- tweakable rules ----
 const START_MASS=10,GAIN=2,LOSS_PCT=0.1,MIN_MASS=6,FAIL_KEEP=0.8,VOTE_SECS=20,COUNTDOWN=3,MS=+process.env.MS_PER_MIN||60000;
-let G={phase:'setup',teams:[],players:{},cfg:null,count:0,pool:[],endAt:0,timeUp:false,base:null,round:-1,out:[],score:{},tc:{},rr:[]};
+let G={phase:'setup',teams:[],players:{},cfg:null,count:0,pool:[],endAt:0,timeUp:false,base:null,round:-1,out:[],score:{},tc:{},rr:[],solo:false,soloTop:null,sn:{},nt:0};
 const mk=()=>Array.from({length:G.cfg.teams},(_,i)=>({id:i+1,name:NAMES[i],color:COLORS[i],mass:START_MASS,eats:0,eating:false,votes:{},done:{},members:[]}));
 const cnt=(t,id)=>Math.min(t.done[id]||0,G.cfg.quota);
+const SOLO_CAND=5,nRounds=()=>G.cfg.rounds.length+(G.cfg.solo?1:0),tagOf=i=>i<G.cfg.rounds.length?G.cfg.rounds[i]:G.cfg.solo;
+const nextTag=()=>{const n=G.round+1;return n<G.cfg.rounds.length?G.cfg.rounds[n]:(n==G.cfg.rounds.length&&G.cfg.solo?'Bonus round':'')};
+const hue=i=>{const h=(i*137.5)%360,l=i%2?.5:.6,a=.7*Math.min(l,1-l),k=n=>{const q=(n+h/30)%12;return l-a*Math.max(-1,Math.min(q-3,9-q,1))};return '#'+[k(0),k(8),k(4)].map(v=>Math.round(v*255).toString(16).padStart(2,'0')).join('')};
+function cands(t){const others=G.teams.filter(o=>o!==t).map(o=>o.id);let c=(t.cand||[]).filter(id=>others.includes(id));const rest=others.filter(id=>!c.includes(id)).sort(()=>Math.random()-.5);while(c.length<SOLO_CAND&&rest.length)c.push(rest.pop());return t.cand=c}
 const tm=sid=>{const p=G.players[sid];return p&&G.teams.find(t=>t.id==p.team)};
 const board=()=>G.base.map(b=>({id:b.id,name:b.name,color:b.color,pts:G.score[b.id]||0,gain:(G.rr.find(r=>r.id==b.id)||{}).pts||0,tc:G.tc[b.id]||0})).sort((a,b)=>b.pts-a.pts||b.tc-a.tc);
-const send=()=>io.emit('state',{timeUp:G.timeUp,round:G.round,left:G.phase=='playing'?Math.max(0,Math.round((G.endAt-Date.now())/1000)):0,
+const send=()=>io.emit('state',{solo:G.solo,soloTop:G.soloTop,nt:G.nt,rtag:G.cfg&&G.round>=0?tagOf(G.round):'',ntag:G.cfg?nextTag():'',timeUp:G.timeUp,round:G.round,left:G.phase=='playing'?Math.max(0,Math.round((G.endAt-Date.now())/1000)):0,
  phase:G.phase,count:G.count,np:Object.keys(G.players).length,tags:TAGS,cfg:G.cfg,board:(G.phase=='results'||G.phase=='final')?board():null,
- teams:G.teams.map(t=>({id:t.id,name:t.name,color:t.color,mass:t.mass,ev:t.eats,eating:t.eating,votes:t.votes,n:t.members.length,ids:t.members,names:t.members.map(i=>G.players[i].name),done:t.done,
+ teams:G.teams.map(t=>({id:t.id,name:t.name,color:t.color,mass:t.mass,ev:t.eats,cand:t.eating&&G.solo?cands(t):null,eating:t.eating,votes:t.votes,n:t.members.length,ids:t.members,names:t.members.map(i=>G.players[i].name),done:t.done,
   need:t.members.length*G.cfg.quota,prog:t.members.reduce((a,i)=>a+cnt(t,i),0),fin:t.members.filter(i=>cnt(t,i)>=G.cfg.quota).length}))});
-function clean(){clearTimeout(G.endTimer);G.teams.forEach(t=>clearTimeout(t.timer));G.teams=[];G.base=null;G.round=-1;G.out=[];G.score={};G.tc={};G.rr=[];G.timeUp=false;
+function clean(){clearTimeout(G.endTimer);G.teams.forEach(t=>clearTimeout(t.timer));G.teams=[];G.base=null;G.round=-1;G.out=[];G.score={};G.tc={};G.rr=[];G.timeUp=false;G.solo=false;G.soloTop=null;
  Object.values(G.players).forEach(p=>p.team=null)}
 function leave(id){const t=tm(id);if(t){t.members=t.members.filter(i=>i!=id);delete t.votes[id];delete t.done[id]}if(G.players[id])G.players[id].team=null}
 function place(id){const free=G.teams.filter(t=>t.members.length<G.cfg.slots),L=free.length?free:G.teams;
  const t=L.reduce((a,b)=>b.members.length<a.members.length?b:a);t.members.push(id);G.players[id].team=t.id;
- if(G.base){const b=G.base.find(b=>b.id==t.id);if(b)b.members.push(id)}io.to(id).emit('you',t.id)}
-function startRound(){G.round++;G.out=[];G.rr=[];G.timeUp=false;
- G.teams=G.base.map(b=>({id:b.id,name:b.name,color:b.color,mass:START_MASS,eats:0,eating:false,votes:{},done:{},members:[...b.members]}));
- G.base.forEach(b=>b.members.forEach(id=>{G.players[id].team=b.id;io.to(id).emit('you',b.id);io.to(id).emit('orig',b.id)}));
- const all=Q.map((q,i)=>i),p=all.filter(i=>Q[i].tag==G.cfg.rounds[G.round]);G.pool=p.length?p:all;
+ if(G.base&&!G.solo){const b=G.base.find(b=>b.id==t.id);if(b)b.members.push(id)}io.to(id).emit('you',t.id)}
+function startRound(){G.round++;G.out=[];G.rr=[];G.timeUp=false;G.solo=!!(G.cfg.solo&&G.round==G.cfg.rounds.length);G.nt=G.solo?Object.keys(G.players).length:G.base.length;
+ if(G.solo){G.sn={};G.teams=Object.keys(G.players).map((id,i)=>{G.sn[i+1]=G.players[id].name;G.players[id].team=i+1;io.to(id).emit('you',i+1);return{id:i+1,name:G.players[id].name,color:hue(i),mass:START_MASS,eats:0,eating:false,votes:{},done:{},members:[id]}})}
+ else G.teams=G.base.map(b=>({id:b.id,name:b.name,color:b.color,mass:START_MASS,eats:0,eating:false,votes:{},done:{},members:[...b.members]}));
+ if(!G.solo)G.base.forEach(b=>b.members.forEach(id=>{G.players[id].team=b.id;io.to(id).emit('you',b.id);io.to(id).emit('orig',b.id)}));
+ const all=Q.map((q,i)=>i),p=all.filter(i=>Q[i].tag==tagOf(G.round));G.pool=p.length?p:all;
  G.phase='countdown';G.count=COUNTDOWN;send();
  const iv=setInterval(()=>{G.count--;if(G.count<=0){clearInterval(iv);G.phase='playing';G.endAt=Date.now()+G.cfg.mins*MS;G.endTimer=setTimeout(()=>endRound(true),G.cfg.mins*MS)}send()},1000)}
 function endRound(timeUp){if(G.phase!='playing')return;clearTimeout(G.endTimer);G.teams.forEach(t=>clearTimeout(t.timer));
  const order=[...G.teams.slice().sort((a,b)=>b.mass-a.mass).map(t=>t.id),...G.out.slice().reverse()],N=order.length;
- G.rr=order.map((id,i)=>({id,pts:N-i}));G.rr.forEach(r=>G.score[r.id]=(G.score[r.id]||0)+r.pts);
- G.timeUp=timeUp;G.phase=G.round+1>=G.cfg.rounds.length?'final':'results';send()}
+ if(G.solo){G.soloTop=order.slice(0,3).map(id=>G.sn[id]);G.rr=[]}else{G.rr=order.map((id,i)=>({id,pts:N-i}));G.rr.forEach(r=>G.score[r.id]=(G.score[r.id]||0)+r.pts)}
+ G.timeUp=timeUp;G.phase=G.round+1>=nRounds()?'final':'results';send()}
 function chk(t){if(t.eating||G.phase!='playing'||!t.members.length)return;
- if(t.members.every(i=>cnt(t,i)>=G.cfg.quota)){t.eating=true;t.votes={};t.timer=setTimeout(()=>resolve(t),VOTE_SECS*1000)}}
+ if(t.members.every(i=>cnt(t,i)>=G.cfg.quota)){t.eating=true;t.votes={};if(G.solo)cands(t);t.timer=setTimeout(()=>resolve(t),VOTE_SECS*1000)}}
 function resolve(t){if(!t.eating||G.phase!='playing'||!G.teams.includes(t))return;clearTimeout(t.timer);
  const others=G.teams.filter(x=>x!==t);if(!others.length)return;
  const tally={};Object.values(t.votes).forEach(v=>{if(others.find(o=>o.id==v))tally[v]=(tally[v]||0)+1});
@@ -64,7 +69,7 @@ io.on('connection',s=>{
  s.on('config',c=>{if(G.phase!='setup')return;
   const n=Math.max(2,Math.min(8,+c.teams||4)),sl=Math.max(1,Math.min(10,+c.slots||4)),qt=Math.max(1,Math.min(5,+c.quota||2)),mn=Math.max(2,Math.min(20,+c.mins||8));
   const rounds=(Array.isArray(c.rounds)?c.rounds:[]).filter(x=>TAGS.includes(x)).slice(0,6);
-  G.cfg={teams:n,slots:sl,quota:qt,mins:mn,rounds:rounds.length?rounds:[TAGS[0]]};
+  G.cfg={teams:n,slots:sl,quota:qt,mins:mn,rounds:rounds.length?rounds:[TAGS[0]],solo:TAGS.includes(c.solo)?c.solo:''};
   G.teams=mk();G.phase='lobby';send()});
  s.on('join',n=>{G.players[s.id]={name:String(n).replace(/[<>&"]/g,'').slice(0,16),team:null};
   if(G.phase=='countdown'||G.phase=='playing')place(s.id);send()});
@@ -83,7 +88,7 @@ io.on('connection',s=>{
   if(ok){t.mass+=GAIN;t.done[s.id]=cnt(t,s.id)+1;const b=G.base&&G.base.find(b=>b.members.includes(s.id));if(b)G.tc[b.id]=(G.tc[b.id]||0)+1;chk(t)}
   else t.mass=Math.max(MIN_MASS,Math.round(t.mass*(1-LOSS_PCT)*10)/10);
   io.emit('fx',{t:t.id,k:ok?'ok':'no'});s.emit('res',{ok,a:Q[id].o[Q[id].a]});send()});
- s.on('vote',id=>{const t=tm(s.id);if(!t||!t.eating)return;t.votes[s.id]=id;
+ s.on('vote',id=>{const t=tm(s.id);if(!t||!t.eating||(G.solo&&!cands(t).includes(id)))return;t.votes[s.id]=id;
   if(Object.keys(t.votes).length>=t.members.length)resolve(t);else send()});
  s.on('disconnect',()=>{const t=tm(s.id);leave(s.id);delete G.players[s.id];if(G.base)G.base.forEach(b=>b.members=b.members.filter(i=>i!=s.id));
   if(t&&G.teams.includes(t)){chk(t);if(t.eating&&t.members.length&&Object.keys(t.votes).length>=t.members.length)resolve(t)}send()});
