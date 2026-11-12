@@ -6,13 +6,16 @@ canvas{display:block;width:100vw;height:100vh}
 #ui>*{pointer-events:auto}
 button,select{font-size:1.4rem;padding:.4em .8em;border-radius:12px;border:0;margin:.3em}
 button{background:#ffd43b;cursor:pointer;font-weight:700;padding:.5em 1.2em}
+#panel{background:rgba(236,236,236,.93);border-radius:22px;padding:1rem 2.2rem;max-width:92vw;max-height:92vh;overflow:auto;box-shadow:0 4px 18px #0003}
 #bn{position:fixed;top:14px;width:100%;text-align:center;font-size:2.4rem;font-weight:800;text-shadow:0 0 8px #fff,0 0 3px #fff}
 </style>
 <canvas id=c></canvas><div id=bn></div><div id=ui></div>
+<div id=hc style="position:fixed;left:10px;bottom:10px;opacity:.7;display:none"><button id=eb style="font-size:1rem;padding:.3em .8em;margin:0 6px 0 0" onclick="if(confirm('End this round now?'))s.emit('endnow')">End round</button><button style="font-size:1rem;padding:.3em .8em;margin:0" onclick="if(confirm('Reset the game and go back to setup?'))s.emit('reset')">Reset</button></div>
 <div style="position:fixed;right:10px;bottom:10px;opacity:.75"><button id=mb style="font-size:1.1rem;padding:.2em .5em;margin:0" onclick="muted=!muted;mb.textContent=muted?'🔇':'🔊';musicSync()">🔊</button> <input type=range min=0 max=100 value=70 oninput="vol=this.value/100;musicSync()" style="vertical-align:middle"></div>
 <script src=/socket.io/socket.io.js></script>
 <script>
 const s=io(),c=document.getElementById('c'),x=c.getContext('2d'),INK='#222',ui=document.getElementById('ui'),bn=document.getElementById('bn'),mus=new Audio();
+const HC=document.getElementById('hc'),EB=document.getElementById('eb');
 let S={phase:'',teams:[],np:0,tags:[]},pos={},W,H,last=0,MAN={frames:{},fps:{},audio:{}},vol=.7,muted=false,trk='',lastSfx={},shake=-1e9,imgs={},prevE={};
 fetch('/assets.json').then(r=>r.json()).then(m=>{MAN=m;preload()}).catch(()=>{});
 const size=()=>{W=c.width=innerWidth;H=c.height=innerHeight};size();onresize=size;
@@ -26,7 +29,7 @@ document.addEventListener('click',musicSync);
 // ---- state / events ----
 s.on('state',st=>{const ph=S.phase,pc=S.count;
  st.teams.forEach(t=>{if(prevE[t.id]===false&&t.eating)sfx('eatready');prevE[t.id]=t.eating});
- S=st;S.t0=Date.now();
+ S=st;S.t0=Date.now();HC.style.display=st.phase&&st.phase!='setup'?'':'none';EB.style.display=st.phase=='playing'?'':'none';
  if(ph!=st.phase){if(st.phase=='results'||st.phase=='final')sfx(st.phase=='final'?'win':'roundend');musicSync()}
  if(st.phase=='countdown'&&st.count!=pc)sfx('countdown');
  if(ph!=st.phase||st.phase=='lobby'||st.phase=='countdown')ui_()});
@@ -37,12 +40,12 @@ s.on('eat',e=>{const h=pos[e.h],p=pos[e.p];if(!h||!p)return;h.chase=e.p;h.t=e.wi
 // ---- menus ----
 const sel=(id,a,d)=>`<select id=${id}>${a.map(k=>`<option ${k==d?'selected':''}>${k}</option>`).join('')}</select>`;
 function go(){s.emit('config',{teams:+cn.value,slots:+cs.value,quota:+ct.value,mins:+cm.value,rounds:[...document.querySelectorAll('.rd')].map(e=>e.value),solo:cb.value=='None'?'':cb.value})}
-function ui_(){const P=S.phase;
- if(P=='setup')ui.innerHTML=`<h1 style="font-size:3rem">Game setup</h1><p style="font-size:1.5rem">Teams ${sel('cn',[2,3,4,5,6,7,8],4)} Players per team ${sel('cs',[1,2,3,4,5,6,7,8,9,10],4)} Correct answers per student ${sel('ct',[1,2,3,4,5],2)} Round length (min) ${sel('cm',[3,5,6,7,8,10,12,15],8)}</p><p style="font-size:1.4rem">Rounds ${sel('cr',[1,2,3,4,5,6],4)}</p><div id=rs style="font-size:1.3rem"></div><p style="font-size:1.3rem">Bonus solo round <select id=cb><option>None</option>${S.tags.map(g=>`<option>${g}</option>`).join('')}</select></p><button onclick="go()">Open lobby</button>`;
- else if(P=='lobby')ui.innerHTML=`<h1 style="font-size:3rem;margin:.2em">Pick a team on your Chromebook</h1><img src="/qr.svg?u=${encodeURIComponent(location.origin+'/play.html')}" style="width:190px;background:#fff;border-radius:12px;margin:.4em"><p style="font-size:1.4rem;margin:0">Scan, or go to ${location.host}/play.html · ${S.np} joined</p><div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:90vw;margin:1rem">${S.teams.map(t=>`<div style="background:${t.color};color:#222;border-radius:16px;padding:12px 18px;min-width:180px"><b style="font-size:1.5rem">${t.name} ${t.n}/${S.cfg.slots}</b><br>${t.names.join(', ')||'&nbsp;'}</div>`).join('')}</div><button onclick="s.emit('start')">Start</button>`;
- else if(P=='countdown')ui.innerHTML=`<h1 style="font-size:12rem;margin:0">${S.count}</h1><h2 style="font-size:2.4rem">${S.solo?'Bonus round: play alone!':'Round '+(S.round+1)+': '+S.rtag}</h2>`;
- else if(P=='results'||P=='final'){const f=P=='final';ui.innerHTML=`<h1 style="font-size:3.2rem;margin:.2em">${S.timeUp?"⏰ Time's up! ":''}${f?(S.soloTop?'🎉 Bonus winner: '+S.soloTop[0]+'!':'🏆 '+S.board[0].name+' win!'):'Round '+(S.round+1)+' results'}</h1>${f&&S.soloTop?`<p style="font-size:1.6rem;margin:0">2nd: ${S.soloTop[1]||'-'} · 3rd: ${S.soloTop[2]||'-'}</p><h2>Team winner: <span style="background:${S.board[0].color};padding:.05em .6em;border-radius:14px">${S.board[0].name}</span></h2>`:''}<table style="font-size:1.9rem;border-spacing:18px 6px"><tr style="opacity:.7"><td></td><td></td>${S.soloTop?'':'<td>This round</td>'}<td>Total</td></tr>${S.board.map((b,i)=>`<tr><td>${i+1}</td><td><span style="background:${b.color};padding:.05em .6em;border-radius:14px">${b.name}</span></td>${S.soloTop?'':'<td>+'+b.gain+'</td>'}<td><b>${b.pts}</b></td></tr>`).join('')}</table>${f?`<button onclick="s.emit('again')">Play again (same settings)</button><button onclick="s.emit('reset')">New setup</button>`:`<button onclick="s.emit('nextround')">Next: ${S.ntag}</button>`}`}
- else ui.innerHTML='';if(P=='setup'){cr.onchange=rsel;rsel()}}
+function ui_(){const P=S.phase;let H='';
+ if(P=='setup')H=`<h1 style="font-size:3rem">Game setup</h1><p style="font-size:1.5rem">Teams ${sel('cn',[2,3,4,5,6,7,8],4)} Players per team ${sel('cs',[1,2,3,4,5,6,7,8,9,10],4)} Correct answers per student ${sel('ct',[1,2,3,4,5],2)} Round length (min) ${sel('cm',[3,5,6,7,8,10,12,15],8)}</p><p style="font-size:1.4rem">Rounds ${sel('cr',[1,2,3,4,5,6],4)}</p><div id=rs style="font-size:1.3rem"></div><p style="font-size:1.3rem">Bonus solo round <select id=cb><option>None</option>${S.tags.map(g=>`<option>${g}</option>`).join('')}</select></p><button onclick="go()">Open lobby</button>`;
+ else if(P=='lobby')H=`<h1 style="font-size:3rem;margin:.2em">Pick a team on your Chromebook</h1><img src="/qr.svg?u=${encodeURIComponent(location.origin+'/play.html')}" style="width:190px;background:#fff;border-radius:12px;margin:.4em"><p style="font-size:1.4rem;margin:0">Scan, or go to ${location.host}/play.html · ${S.np} joined</p><div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:90vw;margin:1rem">${S.teams.map(t=>`<div style="background:${t.color};color:#222;border-radius:16px;padding:12px 18px;min-width:180px"><b style="font-size:1.5rem">${t.name} ${t.n}/${S.cfg.slots}</b><br>${t.names.join(', ')||'&nbsp;'}</div>`).join('')}</div><button onclick="s.emit('start')">Start</button>`;
+ else if(P=='countdown')H=`<h1 style="font-size:12rem;margin:0">${S.count}</h1><h2 style="font-size:2.4rem">${S.solo?'Bonus round: play alone!':'Round '+(S.round+1)+': '+S.rtag}</h2>`;
+ else if(P=='results'||P=='final'){const f=P=='final';H=`<h1 style="font-size:3.2rem;margin:.2em">${S.timeUp?"⏰ Time's up! ":''}${f?(S.soloTop?'🎉 Bonus winner: '+S.soloTop[0]+'!':'🏆 '+S.board[0].name+' win!'):'Round '+(S.round+1)+' results'}</h1>${f&&S.soloTop?`<p style="font-size:1.6rem;margin:0">2nd: ${S.soloTop[1]||'-'} · 3rd: ${S.soloTop[2]||'-'}</p><h2>Team winner: <span style="background:${S.board[0].color};padding:.05em .6em;border-radius:14px">${S.board[0].name}</span></h2>`:''}<table style="font-size:1.9rem;border-spacing:18px 6px"><tr style="opacity:.7"><td></td><td></td>${S.soloTop?'':'<td>This round</td>'}<td>Total</td></tr>${S.board.map((b,i)=>`<tr><td>${i+1}</td><td><span style="background:${b.color};padding:.05em .6em;border-radius:14px">${b.name}</span></td>${S.soloTop?'':'<td>+'+b.gain+'</td>'}<td><b>${b.pts}</b></td></tr>`).join('')}</table>${f?`<button onclick="s.emit('again')">Play again (same settings)</button><button onclick="s.emit('reset')">New setup</button>`:`<button onclick="s.emit('nextround')">Next: ${S.ntag}</button>`}`}
+ else H='';ui.innerHTML=H?`<div id=panel>${H}</div>`:'';if(P=='setup'){cr.onchange=rsel;rsel()}}
 function rsel(){rs.innerHTML=[...Array(+cr.value)].map((_,i)=>`Round ${i+1} <select class=rd>${S.tags.map(g=>`<option ${g==S.tags[i%S.tags.length]?'selected':''}>${g}</option>`).join('')}</select> `).join('<br>')}
 // ---- art ----
 const img=u=>imgs[u]||(imgs[u]=Object.assign(new Image(),{src:u,onerror(){this.bad=1}})),formOf=t=>1+(t.ev>=1)+(t.ev>=3);
