@@ -17,7 +17,7 @@ app.get('/assets.json',(q,r)=>r.json(manifest()));
 app.get('/qr.svg',async(q,r)=>{try{r.type('image/svg+xml').send(await QR.toString(String(q.query.u||'').slice(0,300),{type:'svg',margin:1}))}catch(e){r.status(400).end()}});
 const Q=require('./questions.json'),TAGS=[...new Set(Q.map(q=>q.tag))];
 const COLORS=['#ff6b6b','#4dabf7','#51cf66','#fcc419','#cc5de8','#ff922b','#20c997','#f06595'];
-const NAMES=['Blobbers','Gloopies','Munchers','Squishies','Chompers','Wobblers','Slimers','Gulpers'];
+const NAMES=['Red','Blue','Green','Yellow','Purple','Orange','Teal','Pink']; // same order as COLORS
 // ---- tweakable rules ----
 const START_MASS=10,GAIN=2,LOSS_PCT=0.1,MIN_MASS=6,FAIL_KEEP=0.8,VOTE_SECS=20,COUNTDOWN=3,MS=+process.env.MS_PER_MIN||60000;
 let G={phase:'setup',teams:[],players:{},cfg:null,count:0,pool:[],endAt:0,timeUp:false,base:null,round:-1,out:[],score:{},tc:{},rr:[]};
