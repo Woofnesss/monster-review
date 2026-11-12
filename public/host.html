@@ -36,12 +36,12 @@ s.on('eat',e=>{const h=pos[e.h],p=pos[e.p];if(!h||!p)return;h.chase=e.p;h.t=e.wi
  bn.textContent=e.win?`${e.hn} ate ${e.pn}!`:`${e.pn} escaped ${e.hn}!`;setTimeout(()=>bn.textContent='',3500)});
 // ---- menus ----
 const sel=(id,a,d)=>`<select id=${id}>${a.map(k=>`<option ${k==d?'selected':''}>${k}</option>`).join('')}</select>`;
-function go(){s.emit('config',{teams:+cn.value,slots:+cs.value,quota:+ct.value,mins:+cm.value,rounds:[...document.querySelectorAll('.rd')].map(e=>e.value)})}
+function go(){s.emit('config',{teams:+cn.value,slots:+cs.value,quota:+ct.value,mins:+cm.value,rounds:[...document.querySelectorAll('.rd')].map(e=>e.value),solo:cb.value=='None'?'':cb.value})}
 function ui_(){const P=S.phase;
- if(P=='setup')ui.innerHTML=`<h1 style="font-size:3rem">Game setup</h1><p style="font-size:1.5rem">Teams ${sel('cn',[2,3,4,5,6,7,8],4)} Players per team ${sel('cs',[1,2,3,4,5,6,7,8,9,10],4)} Correct answers per student ${sel('ct',[1,2,3,4,5],2)} Round length (min) ${sel('cm',[3,5,6,7,8,10,12,15],8)}</p><p style="font-size:1.4rem">Rounds ${sel('cr',[1,2,3,4,5,6],4)}</p><div id=rs style="font-size:1.3rem"></div><button onclick="go()">Open lobby</button>`;
+ if(P=='setup')ui.innerHTML=`<h1 style="font-size:3rem">Game setup</h1><p style="font-size:1.5rem">Teams ${sel('cn',[2,3,4,5,6,7,8],4)} Players per team ${sel('cs',[1,2,3,4,5,6,7,8,9,10],4)} Correct answers per student ${sel('ct',[1,2,3,4,5],2)} Round length (min) ${sel('cm',[3,5,6,7,8,10,12,15],8)}</p><p style="font-size:1.4rem">Rounds ${sel('cr',[1,2,3,4,5,6],4)}</p><div id=rs style="font-size:1.3rem"></div><p style="font-size:1.3rem">Bonus solo round <select id=cb><option>None</option>${S.tags.map(g=>`<option>${g}</option>`).join('')}</select></p><button onclick="go()">Open lobby</button>`;
  else if(P=='lobby')ui.innerHTML=`<h1 style="font-size:3rem;margin:.2em">Pick a team on your Chromebook</h1><img src="/qr.svg?u=${encodeURIComponent(location.origin+'/play.html')}" style="width:190px;background:#fff;border-radius:12px;margin:.4em"><p style="font-size:1.4rem;margin:0">Scan, or go to ${location.host}/play.html · ${S.np} joined</p><div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:90vw;margin:1rem">${S.teams.map(t=>`<div style="background:${t.color};color:#222;border-radius:16px;padding:12px 18px;min-width:180px"><b style="font-size:1.5rem">${t.name} ${t.n}/${S.cfg.slots}</b><br>${t.names.join(', ')||'&nbsp;'}</div>`).join('')}</div><button onclick="s.emit('start')">Start</button>`;
- else if(P=='countdown')ui.innerHTML=`<h1 style="font-size:12rem;margin:0">${S.count}</h1><h2 style="font-size:2.4rem">Round ${S.round+1}: ${S.cfg.rounds[S.round]}</h2>`;
- else if(P=='results'||P=='final'){const f=P=='final';ui.innerHTML=`<h1 style="font-size:3.2rem;margin:.2em">${S.timeUp?"⏰ Time's up! ":''}${f?'🏆 '+S.board[0].name+' win!':'Round '+(S.round+1)+' results'}</h1><table style="font-size:1.9rem;border-spacing:18px 6px"><tr style="opacity:.7"><td></td><td></td><td>This round</td><td>Total</td></tr>${S.board.map((b,i)=>`<tr><td>${i+1}</td><td><span style="background:${b.color};padding:.05em .6em;border-radius:14px">${b.name}</span></td><td>+${b.gain}</td><td><b>${b.pts}</b></td></tr>`).join('')}</table>${f?`<button onclick="s.emit('again')">Play again (same settings)</button><button onclick="s.emit('reset')">New setup</button>`:`<button onclick="s.emit('nextround')">Next round: ${S.cfg.rounds[S.round+1]}</button>`}`}
+ else if(P=='countdown')ui.innerHTML=`<h1 style="font-size:12rem;margin:0">${S.count}</h1><h2 style="font-size:2.4rem">${S.solo?'Bonus round: play alone!':'Round '+(S.round+1)+': '+S.rtag}</h2>`;
+ else if(P=='results'||P=='final'){const f=P=='final';ui.innerHTML=`<h1 style="font-size:3.2rem;margin:.2em">${S.timeUp?"⏰ Time's up! ":''}${f?(S.soloTop?'🎉 Bonus winner: '+S.soloTop[0]+'!':'🏆 '+S.board[0].name+' win!'):'Round '+(S.round+1)+' results'}</h1>${f&&S.soloTop?`<p style="font-size:1.6rem;margin:0">2nd: ${S.soloTop[1]||'-'} · 3rd: ${S.soloTop[2]||'-'}</p><h2>Team winner: <span style="background:${S.board[0].color};padding:.05em .6em;border-radius:14px">${S.board[0].name}</span></h2>`:''}<table style="font-size:1.9rem;border-spacing:18px 6px"><tr style="opacity:.7"><td></td><td></td>${S.soloTop?'':'<td>This round</td>'}<td>Total</td></tr>${S.board.map((b,i)=>`<tr><td>${i+1}</td><td><span style="background:${b.color};padding:.05em .6em;border-radius:14px">${b.name}</span></td>${S.soloTop?'':'<td>+'+b.gain+'</td>'}<td><b>${b.pts}</b></td></tr>`).join('')}</table>${f?`<button onclick="s.emit('again')">Play again (same settings)</button><button onclick="s.emit('reset')">New setup</button>`:`<button onclick="s.emit('nextround')">Next: ${S.ntag}</button>`}`}
  else ui.innerHTML='';if(P=='setup'){cr.onchange=rsel;rsel()}}
 function rsel(){rs.innerHTML=[...Array(+cr.value)].map((_,i)=>`Round ${i+1} <select class=rd>${S.tags.map(g=>`<option ${g==S.tags[i%S.tags.length]?'selected':''}>${g}</option>`).join('')}</select> `).join('<br>')}
 // ---- art ----
@@ -89,7 +89,7 @@ function drawMon(t,p,ts){
  x.save();x.translate(p.x,p.y);x.rotate(p.rot||0);x.scale(sc,sc);x.globalAlpha=Math.max(0,Math.min(1,p.sc==null?1:p.sc));
  if(im){const z=p.r*2/BODY,la=fr.tint?lineArt(im):null;x.scale(p.face<0?-1:1,1);
   if(la){if(la.f){tinted(la.f.body,t.color,z);if(la.f.hole)tinted(la.f.hole,shade(t.color,.45),z);x.drawImage(im,-z/2,-z/2,z,z)}else tinted(im,t.color,z)}
-  else{if(fr.tint)x.filter=`hue-rotate(${(t.id-1)*360/(S.cfg?S.cfg.teams:6)}deg)`;x.drawImage(im,-z/2,-z/2,z,z);x.filter='none'}}
+  else{if(fr.tint)x.filter=`hue-rotate(${(t.id-1)*360/(S.nt||6)}deg)`;x.drawImage(im,-z/2,-z/2,z,z);x.filter='none'}}
  else{x.fillStyle=t.color;x.beginPath();for(let a=0;a<=6.5;a+=.2){const r=p.r*(1+.06*Math.sin(a*5+ts/300+p.ph));x[a?'lineTo':'moveTo'](Math.cos(a)*r,Math.sin(a)*r)}x.fill();
   x.fillStyle='#fff';for(const e of[-.3,.3]){x.beginPath();x.arc(e*p.r,-p.r*.2,p.r*.17,0,7);x.fill()}
   x.fillStyle='#222';for(const e of[-.3,.3]){x.beginPath();x.arc(e*p.r,-p.r*.18,p.r*.08,0,7);x.fill()}}
@@ -113,15 +113,15 @@ function frame(ts){
    if(p.x<p.r||p.x>W-p.r)p.vx*=-1;if(p.y<p.r+70||p.y>H-p.r)p.vy*=-1;
    p.x=Math.max(p.r,Math.min(W-p.r,p.x));p.y=Math.max(p.r+70,Math.min(H-p.r,p.y))}
   drawMon(t,p,ts);
-  if(!p.dying){x.globalAlpha=1;x.fillStyle=INK;x.textAlign='center';x.font='bold 24px system-ui';x.fillText(`${t.name} (${t.n})`,p.x,p.y+p.r*1.25+26);
-   const f=t.need?t.prog/t.need:0,by=p.y-p.r*1.25-22;
-   x.fillStyle='#0003';x.fillRect(p.x-50,by,100,10);x.fillStyle=t.eating?'#e67700':'#444';x.fillRect(p.x-50,by,100*f,10);
-   x.fillStyle=INK;x.font='16px system-ui';x.fillText(`✓${t.prog}/${t.need}  👤${t.fin}/${t.n}`,p.x,by-8);
-   if(t.eating){x.font='bold 24px system-ui';x.fillStyle='#e67700';x.fillText('VOTING!',p.x,by-30)}}}
+  if(!p.dying){const so=S.solo,bw=so?60:100;x.globalAlpha=1;x.fillStyle=INK;x.textAlign='center';x.font=so?'bold 18px system-ui':'bold 24px system-ui';
+   x.fillText(so?t.name+(t.n>1?' +'+(t.n-1):''):`${t.name} (${t.n})`,p.x,p.y+p.r*1.25+(so?20:26));
+   const f=t.need?t.prog/t.need:0,by=p.y-p.r*1.25-(so?14:22),bh=so?6:10;
+   x.fillStyle='#0003';x.fillRect(p.x-bw/2,by,bw,bh);x.fillStyle=t.eating?'#e67700':'#444';x.fillRect(p.x-bw/2,by,bw*f,bh);
+   if(!so){x.fillStyle=INK;x.font='16px system-ui';x.fillText(`✓${t.prog}/${t.need}  👤${t.fin}/${t.n}`,p.x,by-8);
+    if(t.eating){x.font='bold 24px system-ui';x.fillStyle='#e67700';x.fillText('VOTING!',p.x,by-30)}}}}
  for(const id in pos)if(pos[id].gone)delete pos[id];
  x.restore();
- if(S.phase=='playing'){const l=Math.max(0,Math.round(S.left-(Date.now()-S.t0)/1000));x.font='bold 44px system-ui';x.textAlign='right';x.fillStyle=l<30?'#d6336c':INK;x.fillText(Math.floor(l/60)+':'+String(l%60).padStart(2,'0'),W-20,50);
-  x.textAlign='left';x.fillStyle=INK;x.font='bold 30px system-ui';x.fillText(`Round ${S.round+1}/${S.cfg.rounds.length}: ${S.cfg.rounds[S.round]}`,20,50)}
+ if(S.phase=='playing'){const l=Math.max(0,Math.round(S.left-(Date.now()-S.t0)/1000));x.font='bold 44px system-ui';x.textAlign='right';x.fillStyle=l<30?'#d6336c':INK;x.fillText(Math.floor(l/60)+':'+String(l%60).padStart(2,'0'),W-20,50)}
  requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 </script>
