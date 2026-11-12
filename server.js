@@ -33,19 +33,19 @@ const send=()=>io.emit('state',{solo:G.solo,soloTop:G.soloTop,nt:G.nt,rtag:G.cfg
  phase:G.phase,count:G.count,np:Object.keys(G.players).length,tags:TAGS,cfg:G.cfg,board:(G.phase=='results'||G.phase=='final')?board():null,
  teams:G.teams.map(t=>({id:t.id,name:t.name,color:t.color,mass:t.mass,ev:t.eats,cand:t.eating&&G.solo?cands(t):null,eating:t.eating,votes:t.votes,n:t.members.length,ids:t.members,names:t.members.map(i=>G.players[i].name),done:t.done,
   need:t.members.length*G.cfg.quota,prog:t.members.reduce((a,i)=>a+cnt(t,i),0),fin:t.members.filter(i=>cnt(t,i)>=G.cfg.quota).length}))});
-function clean(){clearTimeout(G.endTimer);G.teams.forEach(t=>clearTimeout(t.timer));G.teams=[];G.base=null;G.round=-1;G.out=[];G.score={};G.tc={};G.rr=[];G.timeUp=false;G.solo=false;G.soloTop=null;
+function clean(){clearTimeout(G.endTimer);clearInterval(G.cd);G.teams.forEach(t=>clearTimeout(t.timer));G.teams=[];G.base=null;G.round=-1;G.out=[];G.score={};G.tc={};G.rr=[];G.timeUp=false;G.solo=false;G.soloTop=null;
  Object.values(G.players).forEach(p=>p.team=null)}
 function leave(id){const t=tm(id);if(t){t.members=t.members.filter(i=>i!=id);delete t.votes[id];delete t.done[id]}if(G.players[id])G.players[id].team=null}
 function place(id){const free=G.teams.filter(t=>t.members.length<G.cfg.slots),L=free.length?free:G.teams;
  const t=L.reduce((a,b)=>b.members.length<a.members.length?b:a);t.members.push(id);G.players[id].team=t.id;
  if(G.base&&!G.solo){const b=G.base.find(b=>b.id==t.id);if(b)b.members.push(id)}io.to(id).emit('you',t.id)}
-function startRound(){G.round++;G.out=[];G.rr=[];G.timeUp=false;G.solo=!!(G.cfg.solo&&G.round==G.cfg.rounds.length);G.nt=G.solo?Object.keys(G.players).length:G.base.length;
+function startRound(){Object.values(G.players).forEach(p=>{p.deck=null;p.last=-1});G.round++;G.out=[];G.rr=[];G.timeUp=false;G.solo=!!(G.cfg.solo&&G.round==G.cfg.rounds.length);G.nt=G.solo?Object.keys(G.players).length:G.base.length;
  if(G.solo){G.sn={};G.teams=Object.keys(G.players).map((id,i)=>{G.sn[i+1]=G.players[id].name;G.players[id].team=i+1;io.to(id).emit('you',i+1);return{id:i+1,name:G.players[id].name,color:hue(i),mass:START_MASS,eats:0,eating:false,votes:{},done:{},members:[id]}})}
  else G.teams=G.base.map(b=>({id:b.id,name:b.name,color:b.color,mass:START_MASS,eats:0,eating:false,votes:{},done:{},members:[...b.members]}));
  if(!G.solo)G.base.forEach(b=>b.members.forEach(id=>{G.players[id].team=b.id;io.to(id).emit('you',b.id);io.to(id).emit('orig',b.id)}));
  const all=Q.map((q,i)=>i),p=all.filter(i=>Q[i].tag==tagOf(G.round));G.pool=p.length?p:all;
  G.phase='countdown';G.count=COUNTDOWN;send();
- const iv=setInterval(()=>{G.count--;if(G.count<=0){clearInterval(iv);G.phase='playing';G.endAt=Date.now()+G.cfg.mins*MS;G.endTimer=setTimeout(()=>endRound(true),G.cfg.mins*MS)}send()},1000)}
+ clearInterval(G.cd);G.cd=setInterval(()=>{if(G.phase!='countdown'){clearInterval(G.cd);return}G.count--;if(G.count<=0){clearInterval(G.cd);G.phase='playing';G.endAt=Date.now()+G.cfg.mins*MS;G.endTimer=setTimeout(()=>endRound(true),G.cfg.mins*MS)}send()},1000)}
 function endRound(timeUp){if(G.phase!='playing')return;clearTimeout(G.endTimer);G.teams.forEach(t=>clearTimeout(t.timer));
  const order=[...G.teams.slice().sort((a,b)=>b.mass-a.mass).map(t=>t.id),...G.out.slice().reverse()],N=order.length;
  if(G.solo){G.soloTop=order.slice(0,3).map(id=>G.sn[id]);G.rr=[]}else{G.rr=order.map((id,i)=>({id,pts:N-i}));G.rr.forEach(r=>G.score[r.id]=(G.score[r.id]||0)+r.pts)}
@@ -81,9 +81,11 @@ io.on('connection',s=>{
   G.base=G.teams.map(t=>({id:t.id,name:t.name,color:t.color,members:[...t.members]}));G.score={};G.tc={};G.round=-1;startRound()});
  s.on('nextround',()=>{if(G.phase=='results')startRound()});
  s.on('again',()=>{if(G.phase!='final')return;clean();G.teams=mk();G.phase='lobby';io.emit('you',null);send()});
+ s.on('endnow',()=>endRound(false));
  s.on('reset',()=>{clean();G.phase='setup';send()});
  s.on('next',()=>{const t=tm(s.id);if(!t||t.eating||G.phase!='playing'||cnt(t,s.id)>=G.cfg.quota)return;
-  const i=G.pool[Math.floor(Math.random()*G.pool.length)];s.emit('q',{id:i,q:Q[i].q,o:Q[i].o})});
+  const p=G.players[s.id];if(!p.deck||!p.deck.length){p.deck=G.pool.slice().sort(()=>Math.random()-.5);if(p.deck.length>1&&p.deck[p.deck.length-1]===p.last)p.deck.unshift(p.deck.pop())}
+  const i=p.deck.pop();p.last=i;s.emit('q',{id:i,q:Q[i].q,o:Q[i].o})});
  s.on('ans',({id,c})=>{const t=tm(s.id);if(!t||t.eating||G.phase!='playing'||!Q[id]||cnt(t,s.id)>=G.cfg.quota)return;const ok=c==Q[id].a;
   if(ok){t.mass+=GAIN;t.done[s.id]=cnt(t,s.id)+1;const b=G.base&&G.base.find(b=>b.members.includes(s.id));if(b)G.tc[b.id]=(G.tc[b.id]||0)+1;chk(t)}
   else t.mass=Math.max(MIN_MASS,Math.round(t.mass*(1-LOSS_PCT)*10)/10);
