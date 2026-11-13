@@ -2,12 +2,12 @@ const express=require('express'),http=require('http'),{Server}=require('socket.i
 const app=express(),srv=http.createServer(app),io=new Server(srv);
 app.use(express.static('public'));
 const QR=require('qrcode'),fs=require('fs'),path=require('path');
-function manifest(){const m={frames:{},fps:{},audio:{}},root=path.join(__dirname,'public','assets');
+function manifest(){const m={frames:{},fps:{},audio:{},images:{}},root=path.join(__dirname,'public','assets');
  (function walk(d){let es;try{es=fs.readdirSync(d,{withFileTypes:true})}catch(e){return}
   for(const e of es){const f=path.join(d,e.name);if(e.isDirectory()){walk(f);continue}
    const rel=path.relative(root,f).split(path.sep),dir=rel.slice(0,-1).join('/'),b=e.name,ext=path.extname(b).slice(1).toLowerCase(),stem=b.slice(0,b.length-ext.length-1),url=encodeURI('/assets/'+rel.join('/'));
    if(b.toLowerCase()=='fps.txt'){m.fps[dir]={};fs.readFileSync(f,'utf8').split(/\r?\n/).forEach(l=>{const[a,n]=l.trim().split(/\s+/);if(a&&+n>0)m.fps[dir][a]=+n})}
-   else if(['png','webp','jpg','jpeg','gif'].includes(ext)){const mt=stem.match(/^(.*?)[_-]?(\d+)$/);if(!mt)continue;let a=mt[1]||'frame',d=dir;
+   else if(['png','webp','jpg','jpeg','gif'].includes(ext)){const mt=stem.match(/^(.*?)[_-]?(\d+)$/);if(!mt){m.images[dir+'/'+stem]=url;continue}let a=mt[1]||'frame',d=dir;
     if(a=='frame'&&rel.length>=3){a=rel[rel.length-2].toLowerCase();d=rel.slice(0,-2).join('/')}
     (m.frames[d]=m.frames[d]||{});(m.frames[d][a]=m.frames[d][a]||[]).push([+mt[2],url])}
    else if(['mp3','ogg','wav','m4a'].includes(ext))m.audio[dir+'/'+stem]=url}})(root);
@@ -19,6 +19,7 @@ const Q=require('./questions.json'),TAGS=[...new Set(Q.map(q=>q.tag))];
 const COLORS=['#ff6b6b','#4dabf7','#51cf66','#fcc419','#cc5de8','#ff922b','#20c997','#f06595'];
 const NAMES=['Red','Blue','Green','Yellow','Purple','Orange','Teal','Pink']; // same order as COLORS
 // ---- tweakable rules ----
+const PASS=(process.env.HOST_PASSCODE||'').trim(),HOST_ONLY=['config','start','nextround','again','reset','endnow'];
 const START_MASS=10,GAIN=2,LOSS_PCT=0.1,MIN_MASS=6,FAIL_KEEP=0.8,VOTE_SECS=20,COUNTDOWN=3,MS=+process.env.MS_PER_MIN||60000;
 let G={phase:'setup',teams:[],players:{},cfg:null,count:0,pool:[],endAt:0,timeUp:false,base:null,round:-1,out:[],score:{},tc:{},rr:[],solo:false,soloTop:null,sn:{},nt:0};
 const mk=()=>Array.from({length:G.cfg.teams},(_,i)=>({id:i+1,name:NAMES[i],color:COLORS[i],mass:START_MASS,eats:0,eating:false,votes:{},done:{},members:[]}));
@@ -65,6 +66,8 @@ function resolve(t){if(!t.eating||G.phase!='playing'||!G.teams.includes(t))retur
  else t.mass=Math.max(MIN_MASS,Math.round(t.mass*FAIL_KEEP));
  send()}
 io.on('connection',s=>{
+ s.use((p,next)=>{if(!PASS||s.isHost||!HOST_ONLY.includes(p[0]))next()}); // drop host-only commands from non-hosts
+ s.on('hostauth',c=>{s.tries=(s.tries||0)+1;if(!PASS||c===PASS){s.isHost=true;s.emit('hostok')}else if(s.tries<=8)s.emit('hostno')});
  s.on('host',send);
  s.on('config',c=>{if(G.phase!='setup')return;
   const n=Math.max(2,Math.min(8,+c.teams||4)),sl=Math.max(1,Math.min(10,+c.slots||4)),qt=Math.max(1,Math.min(5,+c.quota||2)),mn=Math.max(2,Math.min(20,+c.mins||8));
