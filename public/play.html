@@ -13,7 +13,7 @@ button:disabled{opacity:.35}
 <script>
 const s=io(),m=document.getElementById('m'),tp=document.getElementById('tp'),fill=document.getElementById('fill');
 let S={teams:[],phase:'setup'},me=null,og=null,cur=null,locked=false,mode='',joined=false;
-m.innerHTML=`<h1>Join the game</h1><input id=nm placeholder="Your name"><br><button onclick="join()">Join</button>`;
+m.innerHTML=`<img src="/assets/ui/title.png" onerror="this.remove()" style="display:block;margin:0 auto;max-width:min(420px,80vw)"><h1>Join the game</h1><input id=nm placeholder="Your name"><br><button onclick="join()">Join</button>`;
 function join(){const n=nm.value.trim();if(!n)return;joined=true;s.emit('join',n)}
 s.on('you',id=>me=id);s.on('orig',id=>og=id);
 s.on('state',st=>{S=st;draw()});

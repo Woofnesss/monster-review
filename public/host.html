@@ -11,15 +11,22 @@ button{background:#ffd43b;cursor:pointer;font-weight:700;padding:.5em 1.2em}
 </style>
 <canvas id=c></canvas><div id=bn></div><div id=ui></div>
 <div id=hc style="position:fixed;left:10px;bottom:10px;opacity:.7;display:none"><button id=eb style="font-size:1rem;padding:.3em .8em;margin:0 6px 0 0" onclick="if(confirm('End this round now?'))s.emit('endnow')">End round</button><button style="font-size:1rem;padding:.3em .8em;margin:0" onclick="if(confirm('Reset the game and go back to setup?'))s.emit('reset')">Reset</button></div>
-<div style="position:fixed;right:10px;bottom:10px;opacity:.75"><button id=mb style="font-size:1.1rem;padding:.2em .5em;margin:0" onclick="muted=!muted;mb.textContent=muted?'🔇':'🔊';musicSync()">🔊</button> <input type=range min=0 max=100 value=70 oninput="vol=this.value/100;musicSync()" style="vertical-align:middle"></div>
+<div style="position:fixed;right:10px;bottom:10px;opacity:.75"><button id=mb style="font-size:1.1rem;padding:.2em .5em;margin:0" onclick="muted=!muted;mb.textContent=muted?'🔇':'🔊';musicSync()">🔊</button> <button style="font-size:1.1rem;padding:.2em .5em;margin:0" onclick="document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()">⛶</button> <input type=range min=0 max=100 value=70 oninput="vol=this.value/100;musicSync()" style="vertical-align:middle"></div>
 <script src=/socket.io/socket.io.js></script>
 <script>
 const s=io(),c=document.getElementById('c'),x=c.getContext('2d'),INK='#222',ui=document.getElementById('ui'),bn=document.getElementById('bn'),mus=new Audio();
 const HC=document.getElementById('hc'),EB=document.getElementById('eb');
-let S={phase:'',teams:[],np:0,tags:[]},pos={},W,H,last=0,MAN={frames:{},fps:{},audio:{}},vol=.7,muted=false,trk='',lastSfx={},shake=-1e9,imgs={},prevE={};
+let ti=0,S={phase:'',teams:[],np:0,tags:[]},pos={},W,H,last=0,MAN={frames:{},fps:{},audio:{}},vol=.7,muted=false,trk='',lastSfx={},shake=-1e9,imgs={},prevE={};
 fetch('/assets.json').then(r=>r.json()).then(m=>{MAN=m;preload()}).catch(()=>{});
 const size=()=>{W=c.width=innerWidth;H=c.height=innerHeight};size();onresize=size;
 s.emit('host');
+let AUTH=false,code=sessionStorage.getItem('pw')||'';
+s.on('connect',()=>s.emit('hostauth',code));
+s.on('hostok',()=>{AUTH=true;if(code)sessionStorage.setItem('pw',code);ui_();ctl()});
+s.on('hostno',()=>{AUTH=false;sessionStorage.removeItem('pw');ask(code?'Wrong passcode':'')});
+function ask(msg){ui.innerHTML=`<div id=panel><h2>Teacher passcode</h2><input id=pw type=password style="font-size:1.4rem;padding:.4em;border-radius:10px;border:1px solid #888" onkeydown="if(event.key=='Enter')tryPw()"> <button onclick="tryPw()">OK</button><p style="color:#c92a2a">${msg}</p></div>`;HC.style.display='none'}
+function tryPw(){code=pw.value.trim();s.emit('hostauth',code)}
+function ctl(){HC.style.display=AUTH&&S.phase&&S.phase!='setup'?'':'none';EB.style.display=S.phase=='playing'?'':'none'}
 // ---- sound ----
 const GAP={correct:250,wrong:250};
 function sfx(n){const u=MAN.audio['sfx/'+n],now=Date.now();if(!u||muted||now-(lastSfx[n]||0)<(GAP[n]||0))return;lastSfx[n]=now;const a=new Audio(u);a.volume=vol;a.play().catch(()=>{})}
@@ -29,10 +36,10 @@ document.addEventListener('click',musicSync);
 // ---- state / events ----
 s.on('state',st=>{const ph=S.phase,pc=S.count;
  st.teams.forEach(t=>{if(prevE[t.id]===false&&t.eating)sfx('eatready');prevE[t.id]=t.eating});
- S=st;S.t0=Date.now();HC.style.display=st.phase&&st.phase!='setup'?'':'none';EB.style.display=st.phase=='playing'?'':'none';
+ S=st;S.t0=Date.now();ctl();
  if(ph!=st.phase){if(st.phase=='results'||st.phase=='final')sfx(st.phase=='final'?'win':'roundend');musicSync()}
  if(st.phase=='countdown'&&st.count!=pc)sfx('countdown');
- if(ph!=st.phase||st.phase=='lobby'||st.phase=='countdown')ui_()});
+ if(AUTH&&(ph!=st.phase||st.phase=='lobby'||st.phase=='countdown'))ui_()});
 s.on('fx',e=>{const p=pos[e.t],ok=e.k=='ok';sfx(ok?'correct':'wrong');if(p&&!p.dying&&!p.hold&&p.anim=='idle')play(p,ok?'happy':'sad')});
 s.on('eat',e=>{const h=pos[e.h],p=pos[e.p];if(!h||!p)return;h.chase=e.p;h.t=e.win?2.5:1.2;
  if(e.win){p.dying=true;p.ghost=S.teams.find(t=>t.id==e.p);h.hold=true}
@@ -41,8 +48,8 @@ s.on('eat',e=>{const h=pos[e.h],p=pos[e.p];if(!h||!p)return;h.chase=e.p;h.t=e.wi
 const sel=(id,a,d)=>`<select id=${id}>${a.map(k=>`<option ${k==d?'selected':''}>${k}</option>`).join('')}</select>`;
 function go(){s.emit('config',{teams:+cn.value,slots:+cs.value,quota:+ct.value,mins:+cm.value,rounds:[...document.querySelectorAll('.rd')].map(e=>e.value),solo:cb.value=='None'?'':cb.value})}
 function ui_(){const P=S.phase;let H='';
- if(P=='setup')H=`<h1 style="font-size:3rem">Game setup</h1><p style="font-size:1.5rem">Teams ${sel('cn',[2,3,4,5,6,7,8],4)} Players per team ${sel('cs',[1,2,3,4,5,6,7,8,9,10],4)} Correct answers per student ${sel('ct',[1,2,3,4,5],2)} Round length (min) ${sel('cm',[3,5,6,7,8,10,12,15],8)}</p><p style="font-size:1.4rem">Rounds ${sel('cr',[1,2,3,4,5,6],4)}</p><div id=rs style="font-size:1.3rem"></div><p style="font-size:1.3rem">Bonus solo round <select id=cb><option>None</option>${S.tags.map(g=>`<option>${g}</option>`).join('')}</select></p><button onclick="go()">Open lobby</button>`;
- else if(P=='lobby')H=`<h1 style="font-size:3rem;margin:.2em">Pick a team on your Chromebook</h1><img src="/qr.svg?u=${encodeURIComponent(location.origin+'/play.html')}" style="width:190px;background:#fff;border-radius:12px;margin:.4em"><p style="font-size:1.4rem;margin:0">Scan, or go to ${location.host}/play.html · ${S.np} joined</p><div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:90vw;margin:1rem">${S.teams.map(t=>`<div style="background:${t.color};color:#222;border-radius:16px;padding:12px 18px;min-width:180px"><b style="font-size:1.5rem">${t.name} ${t.n}/${S.cfg.slots}</b><br>${t.names.join(', ')||'&nbsp;'}</div>`).join('')}</div><button onclick="s.emit('start')">Start</button>`;
+ if(P=='setup')H=titleHTML()+`<h1 style="font-size:2rem;margin:.2em">Game setup</h1><p style="font-size:1.5rem">Teams ${sel('cn',[2,3,4,5,6,7,8],4)} Players per team ${sel('cs',[1,2,3,4,5,6,7,8,9,10],4)} Correct answers per student ${sel('ct',[1,2,3,4,5],2)} Round length (min) ${sel('cm',[3,5,6,7,8,10,12,15],8)}</p><p style="font-size:1.4rem">Rounds ${sel('cr',[1,2,3,4,5,6],4)}</p><div id=rs style="font-size:1.3rem"></div><p style="font-size:1.3rem">Bonus solo round <select id=cb><option>None</option>${S.tags.map(g=>`<option>${g}</option>`).join('')}</select></p><button onclick="go()">Open lobby</button>`;
+ else if(P=='lobby')H=titleHTML(20)+`<h1 style="font-size:2rem;margin:.1em">Pick a team on your Chromebook</h1><img src="/qr.svg?u=${encodeURIComponent(location.origin+'/play.html')}" style="width:190px;background:#fff;border-radius:12px;margin:.4em"><p style="font-size:1.4rem;margin:0">Scan, or go to ${location.host}/play.html · ${S.np} joined</p><div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:90vw;margin:1rem">${S.teams.map(t=>`<div style="background:${t.color};color:#222;border-radius:16px;padding:12px 18px;min-width:180px"><b style="font-size:1.5rem">${t.name} ${t.n}/${S.cfg.slots}</b><br>${t.names.join(', ')||'&nbsp;'}</div>`).join('')}</div><button onclick="s.emit('start')">Start</button>`;
  else if(P=='countdown')H=`<h1 style="font-size:12rem;margin:0">${S.count}</h1><h2 style="font-size:2.4rem">${S.solo?'Bonus round: play alone!':'Round '+(S.round+1)+': '+S.rtag}</h2>`;
  else if(P=='results'||P=='final'){const f=P=='final';H=`<h1 style="font-size:3.2rem;margin:.2em">${S.timeUp?"⏰ Time's up! ":''}${f?(S.soloTop?'🎉 Bonus winner: '+S.soloTop[0]+'!':'🏆 '+S.board[0].name+' win!'):'Round '+(S.round+1)+' results'}</h1>${f&&S.soloTop?`<p style="font-size:1.6rem;margin:0">2nd: ${S.soloTop[1]||'-'} · 3rd: ${S.soloTop[2]||'-'}</p><h2>Team winner: <span style="background:${S.board[0].color};padding:.05em .6em;border-radius:14px">${S.board[0].name}</span></h2>`:''}<table style="font-size:1.9rem;border-spacing:18px 6px"><tr style="opacity:.7"><td></td><td></td>${S.soloTop?'':'<td>This round</td>'}<td>Total</td></tr>${S.board.map((b,i)=>`<tr><td>${i+1}</td><td><span style="background:${b.color};padding:.05em .6em;border-radius:14px">${b.name}</span></td>${S.soloTop?'':'<td>+'+b.gain+'</td>'}<td><b>${b.pts}</b></td></tr>`).join('')}</table>${f?`<button onclick="s.emit('again')">Play again (same settings)</button><button onclick="s.emit('reset')">New setup</button>`:`<button onclick="s.emit('nextround')">Next: ${S.ntag}</button>`}`}
  else H='';ui.innerHTML=H?`<div id=panel>${H}</div>`:'';if(P=='setup'){cr.onchange=rsel;rsel()}}
@@ -57,7 +64,11 @@ function play(p,a,cb){const fr=frames(p.tid,p.showForm,a);if(fr&&fr.anim==a&&a!=
 function bg(ts){const d=MAN.frames.background;if(!d)return;const a=Object.keys(d)[0],u=d[a],fps=(MAN.fps.background||{})[a]||4,im=img(u[Math.floor(ts/1000*fps)%u.length]);
  if(im.complete&&im.naturalWidth){const k=Math.max(W/im.naturalWidth,H/im.naturalHeight),w=im.naturalWidth*k,h=im.naturalHeight*k;x.drawImage(im,(W-w)/2,(H-h)/2,w,h)}}
 function P(t){return pos[t.id]||(pos[t.id]={tid:t.id,x:W*(.15+Math.random()*.7),y:H*(.3+Math.random()*.55),vx:(Math.random()-.5)*60,vy:(Math.random()-.5)*60,r:H*.03,ph:Math.random()*9,anim:'idle',at0:performance.now()-Math.random()*1000,showForm:formOf(t),face:1})}
-function preload(){for(const d in MAN.frames)for(const a in MAN.frames[d])MAN.frames[d][a].forEach(u=>{const e=img(u);
+function titleHTML(h){const f=MAN.frames.ui&&MAN.frames.ui.title,u=f&&f.length>1?f[ti%f.length]:(MAN.images&&MAN.images['ui/title'])||(f&&f[0]);
+ return u?`<img id=ttl src="${u}" style="display:block;margin:0 auto .3rem;max-width:min(560px,70vw);max-height:${h||26}vh">`:''}
+function preload(){const tf=MAN.frames.ui&&MAN.frames.ui.title;
+ if(tf&&tf.length>1)setInterval(()=>{ti++;const e=document.getElementById('ttl');if(e)e.src=tf[ti%tf.length]},1000/((MAN.fps.ui||{}).title||12));
+ if(AUTH&&(S.phase=='setup'||S.phase=='lobby'))ui_();for(const d in MAN.frames)for(const a in MAN.frames[d])MAN.frames[d][a].forEach(u=>{const e=img(u);
  if(d.indexOf('monster')==0){if(e.complete&&e.naturalWidth)lineArt(e);else e.addEventListener('load',()=>lineArt(e))}})}
 // ---- line-art fill: black outline art gets its closed areas filled with the team colour ----
 const BODY=.52; // fraction of the canvas the monster's body fills (measured from the idle frame)
