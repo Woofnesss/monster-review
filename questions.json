@@ -438,5 +438,1050 @@
 "heavyer"
 ],
 "a": 0
+},
+{
+"tag": "Grade 1: be verb",
+"q": "I ___ a student.",
+"o": [
+"am",
+"is",
+"are",
+"be"
+],
+"a": 0
+},
+{
+"tag": "Grade 1: be verb",
+"q": "She ___ my sister.",
+"o": [
+"am",
+"is",
+"are",
+"be"
+],
+"a": 1
+},
+{
+"tag": "Grade 1: be verb",
+"q": "They ___ from Japan.",
+"o": [
+"are",
+"be",
+"am",
+"is"
+],
+"a": 0
+},
+{
+"tag": "Grade 1: be verb",
+"q": "___ you a teacher?",
+"o": [
+"Am",
+"Do",
+"Are",
+"Is"
+],
+"a": 2
+},
+{
+"tag": "Grade 1: be verb",
+"q": "He ___ not at home.",
+"o": [
+"am",
+"do",
+"is",
+"are"
+],
+"a": 2
+},
+{
+"tag": "Grade 1: be verb",
+"q": "We ___ good friends.",
+"o": [
+"be",
+"is",
+"am",
+"are"
+],
+"a": 3
+},
+{
+"tag": "Grade 1: be verb",
+"q": "___ this your bag?",
+"o": [
+"Are",
+"Is",
+"Am",
+"Do"
+],
+"a": 1
+},
+{
+"tag": "Grade 1: be verb",
+"q": "My mother ___ a nurse.",
+"o": [
+"are",
+"be",
+"am",
+"is"
+],
+"a": 3
+},
+{
+"tag": "Grade 1: be verb",
+"q": "Ken and I ___ in the same class.",
+"o": [
+"is",
+"am",
+"be",
+"are"
+],
+"a": 3
+},
+{
+"tag": "Grade 1: be verb",
+"q": "I ___ not hungry.",
+"o": [
+"do",
+"am",
+"are",
+"is"
+],
+"a": 1
+},
+{
+"tag": "Grade 1: be verb",
+"q": "Where ___ my pen?",
+"o": [
+"is",
+"am",
+"are",
+"do"
+],
+"a": 0
+},
+{
+"tag": "Grade 1: be verb",
+"q": "___ Tom and Mike students?",
+"o": [
+"Do",
+"Are",
+"Am",
+"Is"
+],
+"a": 1
+},
+{
+"tag": "Grade 1: be verb",
+"q": "They ___ from Canada.",
+"o": [
+"are",
+"be",
+"am",
+"is"
+],
+"a": 0
+},
+{
+"tag": "Grade 1: be verb",
+"q": "___ you a soccer fan?",
+"o": [
+"Am",
+"Do",
+"Are",
+"Is"
+],
+"a": 2
+},
+{
+"tag": "Grade 1: be verb",
+"q": "My brother ___ not a teacher.",
+"o": [
+"am",
+"do",
+"is",
+"are"
+],
+"a": 2
+},
+{
+"tag": "Grade 1: be verb",
+"q": "We ___ in the same class.",
+"o": [
+"be",
+"is",
+"am",
+"are"
+],
+"a": 3
+},
+{
+"tag": "Grade 1: be verb",
+"q": "\"Are you busy?\" \"No, I ___.\"",
+"o": [
+"is not",
+"do not",
+"are not",
+"am not"
+],
+"a": 3
+},
+{
+"tag": "Grade 1: be verb",
+"q": "The books ___ on the desk.",
+"o": [
+"is",
+"am",
+"be",
+"are"
+],
+"a": 3
+},
+{
+"tag": "Grade 1: be verb",
+"q": "Yuki and I ___ good friends.",
+"o": [
+"be",
+"are",
+"am",
+"is"
+],
+"a": 1
+},
+{
+"tag": "Grade 1: be verb",
+"q": "It ___ sunny today.",
+"o": [
+"is",
+"are",
+"am",
+"be"
+],
+"a": 0
+},
+{
+"tag": "Grade 1: be verb",
+"q": "I ___ twelve years old.",
+"o": [
+"have",
+"am",
+"are",
+"is"
+],
+"a": 1
+},
+{
+"tag": "Grade 1: be verb",
+"q": "___ Ken and Mari in the music room?",
+"o": [
+"Do",
+"Are",
+"Is",
+"Am"
+],
+"a": 1
+},
+{
+"tag": "Grade 1: be verb",
+"q": "\"Is she your teacher?\" \"Yes, she ___.\"",
+"o": [
+"does",
+"are",
+"am",
+"is"
+],
+"a": 3
+},
+{
+"tag": "Grade 1: verb-ing",
+"q": "I am ___ a book now.",
+"o": [
+"to read",
+"reading",
+"read",
+"reads"
+],
+"a": 1
+},
+{
+"tag": "Grade 1: verb-ing",
+"q": "She is ___ TV.",
+"o": [
+"watched",
+"watches",
+"watch",
+"watching"
+],
+"a": 3
+},
+{
+"tag": "Grade 1: verb-ing",
+"q": "They are ___ soccer.",
+"o": [
+"play",
+"playing",
+"plays",
+"played"
+],
+"a": 1
+},
+{
+"tag": "Grade 1: verb-ing",
+"q": "He is ___ in the pool.",
+"o": [
+"swims",
+"swimming",
+"swiming",
+"swim"
+],
+"a": 1
+},
+{
+"tag": "Grade 1: verb-ing",
+"q": "We are ___ lunch now.",
+"o": [
+"eat",
+"ate",
+"eating",
+"eats"
+],
+"a": 2
+},
+{
+"tag": "Grade 1: verb-ing",
+"q": "My dog is ___ in the park.",
+"o": [
+"run",
+"runs",
+"runing",
+"running"
+],
+"a": 3
+},
+{
+"tag": "Grade 1: verb-ing",
+"q": "What are you ___?",
+"o": [
+"did",
+"doing",
+"do",
+"does"
+],
+"a": 1
+},
+{
+"tag": "Grade 1: verb-ing",
+"q": "Is Ken ___ music?",
+"o": [
+"listening",
+"listens to",
+"listen to",
+"listening to"
+],
+"a": 3
+},
+{
+"tag": "Grade 1: verb-ing",
+"q": "I am ___ a letter.",
+"o": [
+"writes",
+"write",
+"writing",
+"writeing"
+],
+"a": 2
+},
+{
+"tag": "Grade 1: verb-ing",
+"q": "The students are ___ English.",
+"o": [
+"studying",
+"studys",
+"study",
+"studied"
+],
+"a": 0
+},
+{
+"tag": "Grade 1: verb-ing",
+"q": "She isn't ___ now.",
+"o": [
+"sleep",
+"sleeps",
+"sleeping",
+"slept"
+],
+"a": 2
+},
+{
+"tag": "Grade 1: verb-ing",
+"q": "He is ___ a picture.",
+"o": [
+"drew",
+"drawing",
+"draw",
+"draws"
+],
+"a": 1
+},
+{
+"tag": "Grade 1: verb-ing",
+"q": "She is ___ in the kitchen.",
+"o": [
+"cooked",
+"cooking",
+"cook",
+"cooks"
+],
+"a": 1
+},
+{
+"tag": "Grade 1: verb-ing",
+"q": "Ken ___ studying English now.",
+"o": [
+"are",
+"does",
+"am",
+"is"
+],
+"a": 3
+},
+{
+"tag": "Grade 1: verb-ing",
+"q": "We ___ watching TV.",
+"o": [
+"do",
+"are",
+"is",
+"am"
+],
+"a": 1
+},
+{
+"tag": "Grade 1: verb-ing",
+"q": "The cat is ___ on the sofa.",
+"o": [
+"sleep",
+"slept",
+"sleeps",
+"sleeping"
+],
+"a": 3
+},
+{
+"tag": "Grade 1: verb-ing",
+"q": "I am ___ to music.",
+"o": [
+"listened",
+"listens",
+"listening",
+"listen"
+],
+"a": 2
+},
+{
+"tag": "Grade 1: verb-ing",
+"q": "___ you eating lunch?",
+"o": [
+"Are",
+"Am",
+"Is",
+"Do"
+],
+"a": 0
+},
+{
+"tag": "Grade 1: verb-ing",
+"q": "Look! It ___ raining.",
+"o": [
+"does",
+"is",
+"am",
+"are"
+],
+"a": 1
+},
+{
+"tag": "Grade 1: verb-ing",
+"q": "She is ___ the piano.",
+"o": [
+"plays",
+"play",
+"playing",
+"to play"
+],
+"a": 2
+},
+{
+"tag": "Grade 1: verb-ing",
+"q": "The boys are ___ in the park.",
+"o": [
+"runned",
+"running",
+"runs",
+"runing"
+],
+"a": 1
+},
+{
+"tag": "Grade 1: verb-ing",
+"q": "I'm ___ a letter to my friend.",
+"o": [
+"writes",
+"writeing",
+"wrote",
+"writing"
+],
+"a": 3
+},
+{
+"tag": "Grade 1: simple past",
+"q": "I ___ to the park yesterday.",
+"o": [
+"going",
+"went",
+"go",
+"goes"
+],
+"a": 1
+},
+{
+"tag": "Grade 1: simple past",
+"q": "She ___ soccer last Sunday.",
+"o": [
+"play",
+"plays",
+"played",
+"playing"
+],
+"a": 2
+},
+{
+"tag": "Grade 1: simple past",
+"q": "We ___ lunch at noon.",
+"o": [
+"eaten",
+"ate",
+"eats",
+"eat"
+],
+"a": 1
+},
+{
+"tag": "Grade 1: simple past",
+"q": "He ___ a movie last night.",
+"o": [
+"watches",
+"watch",
+"watching",
+"watched"
+],
+"a": 3
+},
+{
+"tag": "Grade 1: simple past",
+"q": "I ___ home at six.",
+"o": [
+"come",
+"comes",
+"came",
+"coming"
+],
+"a": 2
+},
+{
+"tag": "Grade 1: simple past",
+"q": "Ken ___ his homework yesterday.",
+"o": [
+"do",
+"did",
+"does",
+"doing"
+],
+"a": 1
+},
+{
+"tag": "Grade 1: simple past",
+"q": "They ___ happy at the party.",
+"o": [
+"were",
+"are",
+"is",
+"was"
+],
+"a": 0
+},
+{
+"tag": "Grade 1: simple past",
+"q": "I ___ tired last night.",
+"o": [
+"is",
+"am",
+"were",
+"was"
+],
+"a": 3
+},
+{
+"tag": "Grade 1: simple past",
+"q": "___ you play tennis yesterday?",
+"o": [
+"Does",
+"Are",
+"Did",
+"Do"
+],
+"a": 2
+},
+{
+"tag": "Grade 1: simple past",
+"q": "She ___ not come to school yesterday.",
+"o": [
+"does",
+"was",
+"did",
+"do"
+],
+"a": 2
+},
+{
+"tag": "Grade 1: simple past",
+"q": "We ___ a big fish in the river.",
+"o": [
+"sees",
+"saw",
+"seeing",
+"see"
+],
+"a": 1
+},
+{
+"tag": "Grade 1: simple past",
+"q": "I ___ a nice bag last week.",
+"o": [
+"buy",
+"buys",
+"buyed",
+"bought"
+],
+"a": 3
+},
+{
+"tag": "Grade 1: simple past",
+"q": "I ___ soccer yesterday.",
+"o": [
+"play",
+"plays",
+"played",
+"playing"
+],
+"a": 2
+},
+{
+"tag": "Grade 1: simple past",
+"q": "She ___ to the park last Sunday.",
+"o": [
+"goes",
+"went",
+"go",
+"going"
+],
+"a": 1
+},
+{
+"tag": "Grade 1: simple past",
+"q": "We ___ pizza for lunch.",
+"o": [
+"ate",
+"eats",
+"eaten",
+"eat"
+],
+"a": 0
+},
+{
+"tag": "Grade 1: simple past",
+"q": "He ___ his homework last night.",
+"o": [
+"doing",
+"do",
+"does",
+"did"
+],
+"a": 3
+},
+{
+"tag": "Grade 1: simple past",
+"q": "They ___ a movie last week.",
+"o": [
+"watches",
+"watching",
+"watched",
+"watch"
+],
+"a": 2
+},
+{
+"tag": "Grade 1: simple past",
+"q": "I ___ a good book yesterday.",
+"o": [
+"reads",
+"readed",
+"read",
+"reading"
+],
+"a": 2
+},
+{
+"tag": "Grade 1: simple past",
+"q": "Ken ___ up at six this morning.",
+"o": [
+"get",
+"got",
+"getting",
+"gets"
+],
+"a": 1
+},
+{
+"tag": "Grade 1: simple past",
+"q": "I didn't ___ breakfast today.",
+"o": [
+"eats",
+"eat",
+"ate",
+"eating"
+],
+"a": 1
+},
+{
+"tag": "Grade 1: simple past",
+"q": "My mother ___ a cake last night.",
+"o": [
+"made",
+"making",
+"makes",
+"make"
+],
+"a": 0
+},
+{
+"tag": "Grade 1: simple past",
+"q": "We ___ in Kyoto two years ago.",
+"o": [
+"live",
+"lives",
+"living",
+"lived"
+],
+"a": 3
+},
+{
+"tag": "Grade 1: simple past",
+"q": "He ___ happy yesterday.",
+"o": [
+"are",
+"was",
+"were",
+"is"
+],
+"a": 1
+},
+{
+"tag": "Grade 1: simple past",
+"q": "They ___ at the library last Friday.",
+"o": [
+"is",
+"was",
+"are",
+"were"
+],
+"a": 3
+},
+{
+"tag": "Grade 1: simple past",
+"q": "She ___ a new bag at the shop.",
+"o": [
+"bought",
+"buys",
+"buyed",
+"buy"
+],
+"a": 0
+},
+{
+"tag": "Grade 3: relative pronouns",
+"q": "I know the girl ___ is playing the piano.",
+"o": [
+"what",
+"who",
+"which",
+"where"
+],
+"a": 1
+},
+{
+"tag": "Grade 3: relative pronouns",
+"q": "This is a book ___ is very interesting.",
+"o": [
+"which",
+"when",
+"who",
+"what"
+],
+"a": 0
+},
+{
+"tag": "Grade 3: relative pronouns",
+"q": "The boy ___ lives next door is my friend.",
+"o": [
+"which",
+"what",
+"where",
+"who"
+],
+"a": 3
+},
+{
+"tag": "Grade 3: relative pronouns",
+"q": "I have a dog ___ can swim well.",
+"o": [
+"when",
+"that",
+"where",
+"what"
+],
+"a": 1
+},
+{
+"tag": "Grade 3: relative pronouns",
+"q": "The man ___ is talking to Ms. Sato is our principal.",
+"o": [
+"where",
+"which",
+"what",
+"who"
+],
+"a": 3
+},
+{
+"tag": "Grade 3: relative pronouns",
+"q": "Look at the cat ___ is sleeping on the sofa.",
+"o": [
+"that",
+"what",
+"when",
+"where"
+],
+"a": 0
+},
+{
+"tag": "Grade 3: relative pronouns",
+"q": "English is a language ___ is spoken in many countries.",
+"o": [
+"that",
+"where",
+"what",
+"who"
+],
+"a": 0
+},
+{
+"tag": "Grade 3: relative pronouns",
+"q": "The teacher ___ teaches us music is kind.",
+"o": [
+"what",
+"who",
+"where",
+"which"
+],
+"a": 1
+},
+{
+"tag": "Grade 3: relative pronouns",
+"q": "This is the bus ___ goes to the station.",
+"o": [
+"what",
+"that",
+"where",
+"who"
+],
+"a": 1
+},
+{
+"tag": "Grade 3: relative pronouns",
+"q": "I like songs ___ make me happy.",
+"o": [
+"where",
+"that",
+"what",
+"who"
+],
+"a": 1
+},
+{
+"tag": "Grade 3: relative pronouns",
+"q": "A girl ___ came to our school today is from Canada.",
+"o": [
+"where",
+"who",
+"what",
+"which"
+],
+"a": 1
+},
+{
+"tag": "Grade 3: relative pronouns",
+"q": "I read a story ___ was written by Natsume Soseki.",
+"o": [
+"what",
+"which",
+"who",
+"where"
+],
+"a": 1
+},
+{
+"tag": "Grade 3: relative pronouns",
+"q": "I know the girl ___ lives next door.",
+"o": [
+"who",
+"what",
+"whose",
+"which"
+],
+"a": 0
+},
+{
+"tag": "Grade 3: relative pronouns",
+"q": "This is the book ___ I bought yesterday.",
+"o": [
+"where",
+"which",
+"when",
+"who"
+],
+"a": 1
+},
+{
+"tag": "Grade 3: relative pronouns",
+"q": "The man ___ is talking to Ken is my uncle.",
+"o": [
+"what",
+"who",
+"where",
+"which"
+],
+"a": 1
+},
+{
+"tag": "Grade 3: relative pronouns",
+"q": "I have a dog ___ can swim.",
+"o": [
+"where",
+"that",
+"what",
+"who"
+],
+"a": 1
+},
+{
+"tag": "Grade 3: relative pronouns",
+"q": "Do you know the boy ___ is playing the guitar?",
+"o": [
+"when",
+"who",
+"whose",
+"which"
+],
+"a": 1
+},
+{
+"tag": "Grade 3: relative pronouns",
+"q": "The cake ___ my mother made was delicious.",
+"o": [
+"where",
+"that",
+"who",
+"what"
+],
+"a": 1
+},
+{
+"tag": "Grade 3: relative pronouns",
+"q": "Mari is a student ___ studies hard.",
+"o": [
+"which",
+"what",
+"who",
+"where"
+],
+"a": 2
+},
+{
+"tag": "Grade 3: relative pronouns",
+"q": "This is a robot ___ can speak English.",
+"o": [
+"where",
+"who",
+"when",
+"that"
+],
+"a": 3
+},
+{
+"tag": "Grade 3: relative pronouns",
+"q": "The song ___ she sang was famous.",
+"o": [
+"that",
+"whose",
+"where",
+"who"
+],
+"a": 0
+},
+{
+"tag": "Grade 3: relative pronouns",
+"q": "I like the teacher ___ teaches us music.",
+"o": [
+"who",
+"where",
+"which",
+"what"
+],
+"a": 0
+},
+{
+"tag": "Grade 3: relative pronouns",
+"q": "The movie ___ we saw yesterday was exciting.",
+"o": [
+"who",
+"where",
+"when",
+"which"
+],
+"a": 3
+},
+{
+"tag": "Grade 3: relative pronouns",
+"q": "A friend is a person ___ helps you.",
+"o": [
+"which",
+"who",
+"where",
+"what"
+],
+"a": 1
+},
+{
+"tag": "Grade 3: relative pronouns",
+"q": "This is a machine ___ makes ice cream.",
+"o": [
+"who",
+"what",
+"which",
+"where"
+],
+"a": 2
 }
 ]
