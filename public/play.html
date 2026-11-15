@@ -9,7 +9,7 @@ button:disabled{opacity:.35}
 #bar{height:14px;background:#0005;border-radius:8px;max-width:520px;margin:.5rem auto}#fill{height:100%;border-radius:8px;width:0}
 </style>
 <div id=tp></div><div id=bar><div id=fill></div></div><div id=m></div>
-<script src=/socket.io/socket.io.js></script>
+<script src=/socket.io/socket.io.js></script><script src=/art.js></script>
 <script>
 const s=io(),m=document.getElementById('m'),tp=document.getElementById('tp'),fill=document.getElementById('fill');
 let S={teams:[],phase:'setup'},me=null,og=null,cur=null,locked=false,mode='',joined=false;
@@ -19,20 +19,21 @@ s.on('you',id=>me=id);s.on('orig',id=>og=id);
 s.on('state',st=>{S=st;draw()});
 function clear_(){tp.innerHTML='';fill.style.width=0}
 function draw(){
- if(!joined)return;const P=S.phase;
+ if(!joined||mode=='scene')return;const P=S.phase;
  if(P=='setup'){mode='';me=null;clear_();m.innerHTML='<h2>Waiting for the teacher…</h2>';return}
+ if(P=='lobby'&&S.cfg.mode=='solo'){mode='';clear_();m.innerHTML='<h2>You are in!</h2><p>Wait for the teacher…</p>';return}
  if(P=='lobby'){mode='';clear_();
   m.innerHTML='<h2>Pick your team</h2>'+S.teams.map(o=>`<button ${o.n>=S.cfg.slots&&o.id!=me?'disabled':''} style="background:${o.color};${o.id==me?'outline:5px solid #fff':''}" onclick="s.emit('pick',${o.id})">${o.name} (${o.n}/${S.cfg.slots})<br><small>${o.names.join(', ')}</small></button>`).join('')+'<p>Waiting for the teacher to start…</p>';return}
- if(P=='results'||P=='final'){mode='';clear_();m.innerHTML=(P=='final'?(S.soloTop?'<h1>🎉 '+S.soloTop[0]+' wins the bonus!</h1>':'<h1>🏆 '+S.board[0].name+' win!</h1>'):'<h1>Round '+(S.round+1)+' done'+(S.timeUp?' ⏰':'')+'</h1>')+S.board.map((b,i)=>`<p style="font-size:1.3rem;margin:.3em;color:${b.color};${b.id==og?'outline:3px solid #fff;border-radius:8px':''}">${i+1}. ${b.name} · ${b.pts} pts ${S.soloTop?'':'(+'+b.gain+')'}</p>`).join('')+(P=='final'?'':'<p>Waiting for the teacher…</p>');return}
+ if(P=='results'||P=='final'){mode='';clear_();m.innerHTML=(P=='final'?(S.soloTop?'<h1>🎉 '+S.soloTop[0]+' wins the bonus!</h1>':'<h1>🏆 '+S.board[0].name+(S.cfg.mode=='solo'?' wins!':' win!')+'</h1>'):'<h1>Round '+(S.round+1)+' done'+(S.timeUp?' ⏰':'')+'</h1>')+S.board.map((b,i)=>({b,i})).filter(o=>S.board.length<=8||o.i<5||o.b.id==og).map(({b,i})=>`<p style="font-size:1.3rem;margin:.3em;color:${b.color};${b.id==og?'outline:3px solid #fff;border-radius:8px':''}">${i+1}. ${b.name} · ${b.pts} pts ${S.soloTop?'':'(+'+b.gain+')'}</p>`).join('')+(P=='final'?'':'<p>Waiting for the teacher…</p>');return}
  const t=S.teams.find(t=>t.id==me);if(!t)return;
  tp.innerHTML=`<h2 style="color:${t.color};margin:.2em">${t.name}</h2><small>${S.solo?t.prog+'/'+t.need+' correct':'Team '+t.prog+'/'+t.need+' correct · '+t.fin+'/'+t.n+' players finished'}</small>`;
  fill.style.background=t.color;fill.style.width=100*(t.need?t.prog/t.need:0)+'%';
- if(P=='countdown'){mode='cd';m.innerHTML=`<h1 style="font-size:7rem;margin:.2em">${S.count}</h1><p>${S.solo?'Bonus round: play alone!':'Round '+(S.round+1)+': '+S.rtag}</p>`;return}
+ if(P=='countdown'){mode='cd';m.innerHTML=`<h1 style="font-size:7rem;margin:.2em">${S.count}</h1><p>${S.solo&&S.cfg.mode!='solo'?'Bonus round: play alone!':'Round '+(S.round+1)+': '+S.rtag}</p>`;return}
  const md=P=='done'?'done':t.eating?'eat':Math.min(t.done[s.id]||0,S.cfg.quota)>=S.cfg.quota?'wait':'q';
  if(md==mode&&md!='eat'&&md!='wait')return;mode=md;
  if(md=='done')m.innerHTML=S.timeUp?`<h1>⏰ Time's up!</h1><h2>🏆 ${S.teams[0].name} is the biggest!</h2>`:'<h1>🏆 One giant monster! Everyone wins together!</h1>';
  else if(md=='eat'){const cnt=id=>Object.values(t.votes).filter(v=>v==id).length;
-  m.innerHTML=`<h1>🍽 Time to EAT!</h1><h3>Back to your seat and vote!</h3><p>Vote for a monster to eat. The most votes wins. Bigger monsters win!</p>`+(t.cand?t.cand.map(id=>S.teams.find(o=>o.id==id)).filter(Boolean):S.teams.filter(o=>o.id!=me)).map(o=>`<button style="background:${o.color};${t.votes[s.id]==o.id?'outline:5px solid #fff':''}" onclick="s.emit('vote',${o.id})">${o.name} (size ${Math.round(o.mass)}) · ${cnt(o.id)} votes</button>`).join('')+`<p>Your size: ${Math.round(t.mass)}</p>`}
+  m.innerHTML=`<h1>🍽 Your monster is hungry!</h1><h2>Who do you want to eat?</h2>`+(t.cand?t.cand.map(id=>S.teams.find(o=>o.id==id)).filter(Boolean):S.teams.filter(o=>o.id!=me)).map(o=>`<button style="background:${o.color};${t.votes[s.id]==o.id?'outline:5px solid #fff':''}" onclick="s.emit('vote',${o.id})">${o.name} (size ${Math.round(o.mass)}) · ${cnt(o.id)} votes</button>`).join('')}
  else if(md=='wait')m.innerHTML=`<h1>✅ ${S.cfg.quota} correct!</h1><h2>Help your teammates!</h2>`+t.ids.map((id,i)=>`<p style="font-size:1.3rem;margin:.2em">${(t.done[id]||0)>=S.cfg.quota?'✅':'⏳'} ${t.names[i]}</p>`).join('')+'<p>When everyone is done, come back and vote!</p>';
  else s.emit('next')}
 s.on('q',q=>{cur=q;locked=false;if(mode!='q')return;
@@ -40,4 +41,20 @@ s.on('q',q=>{cur=q;locked=false;if(mode!='q')return;
 function ans(i){if(locked)return;locked=true;s.emit('ans',{id:cur.id,c:i})}
 s.on('res',r=>{m.innerHTML=`<h1>${r.ok?'✅ Correct!':'❌ Not quite'}</h1><p>${r.ok?'':'Answer: '+r.a}</p>`;
  setTimeout(()=>{if(mode=='q')s.emit('next')},1200)});
+
+// ---- short eat scene so students see what happened (and get a pause before new questions) ----
+fetch('/assets.json').then(r=>r.json()).then(artInit).catch(()=>{});
+const SCENE_MS=3600;let sc=null;
+s.on('scene',e=>{if(!joined)return;sc=Object.assign({t0:performance.now()},e);mode='scene';clear_();NT=e.nt||6;
+ m.innerHTML=`<h1 style="margin:.2em">${e.role=='prey'?'😱 Eaten!':e.win?'😋 Chomp!':'😢 Missed!'}</h1><canvas id=scv width=320 height=320 style="max-width:90vw;background:#f4f1ea;border-radius:20px"></canvas>`;
+ requestAnimationFrame(scLoop)});
+function scLoop(){if(!sc)return;const el=performance.now()-sc.t0,cv=document.getElementById('scv');if(cv)drawScene(cv.getContext('2d'),sc,el);
+ if(el>=SCENE_MS){sc=null;mode='';draw()}else requestAnimationFrame(scLoop)}
+function drawScene(g,e,el){g.clearRect(0,0,320,320);const hx=95,hy=175,hr=62,ease=k=>k*k*(3-2*k);
+ const hf=e.win&&el>=1700?e.hf2:e.hf,at=e.win?900:1200;let px=250,ps=1,rot=0;
+ if(e.win){px=250-(250-(hx+hr*.75))*ease(Math.min(1,el/900));if(el>900){const q=Math.min(1,(el-900)/700);ps=1-q;rot=q*9;px+=(hx+hr*.2-px)*q}}
+ else{px=250-(250-(hx+hr*1.1))*ease(Math.min(1,el/700));if(el>700)px+=(285-px)*ease(Math.min(1,(el-700)/700))}
+ if(ps>0)drawMonster(g,{tid:e.pid,form:e.pf,anim:'idle',t:el,color:e.pc,x:px,y:175,r:30,scale:ps,rot,flip:-1});
+ const an=e.win?'eat':'sad',on=el>=at&&el<at+dur(e.hid,hf,an),pop=e.win&&el>=1700&&el<2150?1+.25*Math.sin(Math.PI*(el-1700)/450):1;
+ drawMonster(g,{tid:e.hid,form:hf,anim:on?an:'idle',t:on?el-at:el,color:e.hc,x:hx,y:hy,r:hr,scale:pop})}
 </script>
