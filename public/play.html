@@ -1,52 +1,71 @@
 <!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
 <title>Monster Review</title>
 <style>
-body{margin:0;font-family:system-ui,sans-serif;background:#1b1f3b;color:#fff;text-align:center;padding:1rem}
+body{margin:0;font-family:system-ui,'Hiragino Sans','Noto Sans JP',sans-serif;background:#1b1f3b;color:#fff;text-align:center;padding:1rem}
 button,input{font-size:1.3rem;padding:.7em 1em;border-radius:12px;border:0;margin:.3em;width:min(90%,520px);box-sizing:border-box}
 button{background:#ffd43b;font-weight:700;cursor:pointer;color:#222}
 button:disabled{opacity:.35}
 #opts button{display:block;margin:.5em auto;background:#fff}
+.ja{font-size:.62em;font-weight:500;opacity:.85}
+h1 .ja,h2 .ja{display:block;margin-top:.2em}
 #bar{height:14px;background:#0005;border-radius:8px;max-width:520px;margin:.5rem auto}#fill{height:100%;border-radius:8px;width:0}
 </style>
 <div id=tp></div><div id=bar><div id=fill></div></div><div id=m></div>
 <script src=/socket.io/socket.io.js></script><script src=/art.js></script>
 <script>
 const s=io(),m=document.getElementById('m'),tp=document.getElementById('tp'),fill=document.getElementById('fill');
-let S={teams:[],phase:'setup'},me=null,og=null,cur=null,locked=false,mode='',joined=false;
-m.innerHTML=`<img src="/assets/ui/title.png" onerror="this.remove()" style="display:block;margin:0 auto;max-width:min(420px,80vw)"><h1>Join the game</h1><input id=nm placeholder="Your name"><br><button onclick="join()">Join</button>`;
-function join(){const n=nm.value.trim();if(!n)return;joined=true;s.emit('join',n)}
+let S={teams:[],phase:'setup'},me=null,og=null,cur=null,locked=false,mode='',joined=false,myName='';
+const WRONG_MS=2200,OK_MS=1100,SCENE_MS=3600;
+const EN=()=>S.cfg&&S.cfg.lang=='en';
+const L=(en,ja)=>EN()?en:`${en}<br><span class=ja>${ja}</span>`;      // two-line text: English, then Japanese
+const L1=(en,ja)=>EN()?en:`${en} / ${ja}`;                            // one-line text
+const JA={Red:'赤',Blue:'青',Green:'緑',Yellow:'黄',Purple:'紫',Orange:'オレンジ',Teal:'青緑',Pink:'ピンク'};
+const colName=n=>EN()||!JA[n]?n:`${n} ${JA[n]}`,formOf=t=>1+(t.ev>=1)+(t.ev>=3);
+m.innerHTML=`<img src="/assets/ui/title.png" onerror="this.remove()" style="display:block;margin:0 auto;max-width:min(420px,80vw)"><h1>${L('Join the game','ゲームに参加')}</h1><input id=nm placeholder="Your name / 名前"><br><button onclick="join()">${L('Join','参加')}</button>`;
+function join(){const n=nm.value.trim();if(!n)return;joined=true;myName=n;s.emit('join',n)}
+s.on('connect',()=>{if(joined)s.emit('join',myName)});   // wifi blip or refresh: go straight back in
 s.on('you',id=>me=id);s.on('orig',id=>og=id);
-s.on('state',st=>{S=st;draw()});
+s.on('state',st=>{S=st;S.rt=Date.now();draw()});
 function clear_(){tp.innerHTML='';fill.style.width=0}
+function eatHTML(t){const cnt=id=>Object.values(t.votes).filter(v=>v==id).length,miss=t.ids.map((id,i)=>t.votes[id]?'':t.names[i]).filter(Boolean);
+ return `<h1>🍽 ${L('Your monster is hungry!','モンスターがおなかペコペコ！')}</h1><h2>${L('Who do you want to eat?','だれを食べる？')}</h2><div id=vt style="font-size:1.8rem;font-weight:800">⏱</div>`
+ +(t.cand?t.cand.map(id=>S.teams.find(o=>o.id==id)).filter(Boolean):S.teams.filter(o=>o.id!=me)).map(o=>`<button style="background:${o.color};${t.votes[s.id]==o.id?'outline:5px solid #fff':''}" onclick="s.emit('vote',${o.id})">${colName(o.name)} (${L1('size','大きさ')} ${Math.round(o.mass)}) · 🗳 ${cnt(o.id)}</button>`).join('')
+ +(miss.length?`<p style="opacity:.85">${L1('Waiting for','まだ投票していない人')}: ${miss.join(', ')}</p>`:'')}
+setInterval(()=>{if(mode!='eat')return;const t=S.teams.find(t=>t.id==me),e=document.getElementById('vt');if(t&&e)e.textContent='⏱ '+Math.max(0,Math.round(t.vl-(Date.now()-S.rt)/1000))},300);
 function draw(){
  if(!joined||mode=='scene')return;const P=S.phase;
- if(P=='setup'){mode='';me=null;clear_();m.innerHTML='<h2>Waiting for the teacher…</h2>';return}
- if(P=='lobby'&&S.cfg.mode=='solo'){mode='';clear_();m.innerHTML='<h2>You are in!</h2><p>Wait for the teacher…</p>';return}
+ if(P=='setup'){mode='';me=null;clear_();m.innerHTML=`<h2>${L('Waiting for the teacher…','先生を待っています…')}</h2>`;return}
+ if(P=='lobby'&&S.cfg.mode=='solo'){mode='';clear_();m.innerHTML=`<h2>${L('You are in!','参加しました！')}</h2><p>${L('Wait for the teacher…','先生を待ってね')}</p>`;return}
  if(P=='lobby'){mode='';clear_();
-  m.innerHTML='<h2>Pick your team</h2>'+S.teams.map(o=>`<button ${o.n>=S.cfg.slots&&o.id!=me?'disabled':''} style="background:${o.color};${o.id==me?'outline:5px solid #fff':''}" onclick="s.emit('pick',${o.id})">${o.name} (${o.n}/${S.cfg.slots})<br><small>${o.names.join(', ')}</small></button>`).join('')+'<p>Waiting for the teacher to start…</p>';return}
- if(P=='results'||P=='final'){mode='';clear_();m.innerHTML=(P=='final'?(S.soloTop?'<h1>🎉 '+S.soloTop[0]+' wins the bonus!</h1>':'<h1>🏆 '+S.board[0].name+(S.cfg.mode=='solo'?' wins!':' win!')+'</h1>'):'<h1>Round '+(S.round+1)+' done'+(S.timeUp?' ⏰':'')+'</h1>')+S.board.map((b,i)=>({b,i})).filter(o=>S.board.length<=8||o.i<5||o.b.id==og).map(({b,i})=>`<p style="font-size:1.3rem;margin:.3em;color:${b.color};${b.id==og?'outline:3px solid #fff;border-radius:8px':''}">${i+1}. ${b.name} · ${b.pts} pts ${S.soloTop?'':'(+'+b.gain+')'}</p>`).join('')+(P=='final'?'':'<p>Waiting for the teacher…</p>');return}
+  m.innerHTML=`<h2>${L('Pick your team','チームを選んでね')}</h2>`+S.teams.map(o=>`<button ${o.n>=S.cfg.slots&&o.id!=me?'disabled':''} style="background:${o.color};${o.id==me?'outline:5px solid #fff':''}" onclick="s.emit('pick',${o.id})">${colName(o.name)} (${o.n}/${S.cfg.slots})<br><small>${o.names.join(', ')}</small></button>`).join('')+`<p>${L('Waiting for the teacher to start…','スタートを待ってね…')}</p>`;return}
+ if(P=='results'||P=='final'){mode='';clear_();
+  const head=P=='final'?(S.soloTop?'<h1>'+L('🎉 '+S.soloTop[0]+' wins the bonus!','🎉 ボーナス優勝：'+S.soloTop[0])+'</h1>':'<h1>'+L('🏆 '+S.board[0].name+(S.cfg.mode=='solo'?' wins!':' win!'),'🏆 '+S.board[0].name+' の優勝！')+'</h1>'):'<h1>'+L('Round '+(S.round+1)+' done'+(S.timeUp?' ⏰':''),'ラウンド'+(S.round+1)+'終了')+'</h1>';
+  m.innerHTML=head+S.board.map((b,i)=>({b,i})).filter(o=>S.board.length<=8||o.i<5||o.b.id==og).map(({b,i})=>`<p style="font-size:1.3rem;margin:.3em;color:${b.color};${b.id==og?'outline:3px solid #fff;border-radius:8px':''}">${i+1}. ${b.name} · ${b.pts} 点 ${S.soloTop?'':'(+'+b.gain+')'}</p>`).join('')+(P=='final'?'':`<p>${L('Waiting for the teacher…','先生を待っています…')}</p>`);return}
  const t=S.teams.find(t=>t.id==me);if(!t)return;
- tp.innerHTML=`<h2 style="color:${t.color};margin:.2em">${t.name}</h2><small>${S.solo?t.prog+'/'+t.need+' correct':'Team '+t.prog+'/'+t.need+' correct · '+t.fin+'/'+t.n+' players finished'}</small>`;
+ tp.innerHTML=`<h2 style="color:${t.color};margin:.2em">${colName(t.name)}</h2><small>${S.solo?t.prog+'/'+t.need+' '+L1('correct','正解'):L1('Team','チーム')+' '+t.prog+'/'+t.need+' '+L1('correct','正解')+' · '+t.fin+'/'+t.n+' '+L1('players finished','人終了')}</small>`;
  fill.style.background=t.color;fill.style.width=100*(t.need?t.prog/t.need:0)+'%';
- if(P=='countdown'){mode='cd';m.innerHTML=`<h1 style="font-size:7rem;margin:.2em">${S.count}</h1><p>${S.solo&&S.cfg.mode!='solo'?'Bonus round: play alone!':'Round '+(S.round+1)+': '+S.rtag}</p>`;return}
- const md=P=='done'?'done':t.eating?'eat':Math.min(t.done[s.id]||0,S.cfg.quota)>=S.cfg.quota?'wait':'q';
+ if(P=='countdown'){mode='cd';m.innerHTML=`<h1 style="font-size:7rem;margin:.2em">${S.count}</h1><p>${S.solo&&S.cfg.mode!='solo'?L('Bonus round: play alone!','ボーナス：ひとりで！'):L('Round '+(S.round+1)+': '+S.rtag,'ラウンド'+(S.round+1))}</p>`;return}
+ const md=t.eating?'eat':Math.min(t.done[s.id]||0,S.cfg.quota)>=S.cfg.quota?'wait':'q';
  if(md==mode&&md!='eat'&&md!='wait')return;mode=md;
- if(md=='done')m.innerHTML=S.timeUp?`<h1>⏰ Time's up!</h1><h2>🏆 ${S.teams[0].name} is the biggest!</h2>`:'<h1>🏆 One giant monster! Everyone wins together!</h1>';
- else if(md=='eat'){const cnt=id=>Object.values(t.votes).filter(v=>v==id).length;
-  m.innerHTML=`<h1>🍽 Your monster is hungry!</h1><h2>Who do you want to eat?</h2>`+(t.cand?t.cand.map(id=>S.teams.find(o=>o.id==id)).filter(Boolean):S.teams.filter(o=>o.id!=me)).map(o=>`<button style="background:${o.color};${t.votes[s.id]==o.id?'outline:5px solid #fff':''}" onclick="s.emit('vote',${o.id})">${o.name} (size ${Math.round(o.mass)}) · ${cnt(o.id)} votes</button>`).join('')}
- else if(md=='wait')m.innerHTML=`<h1>✅ ${S.cfg.quota} correct!</h1><h2>Help your teammates!</h2>`+t.ids.map((id,i)=>`<p style="font-size:1.3rem;margin:.2em">${(t.done[id]||0)>=S.cfg.quota?'✅':'⏳'} ${t.names[i]}</p>`).join('')+'<p>When everyone is done, come back and vote!</p>';
+ if(md=='eat')m.innerHTML=eatHTML(t);
+ else if(md=='wait')m.innerHTML=`<h1>✅ ${L(S.cfg.quota+' correct!',S.cfg.quota+'問正解！')}</h1><h2>${L('Help your teammates!','チームメイトを助けよう！')}</h2>`+t.ids.map((id,i)=>`<p style="font-size:1.3rem;margin:.2em">${(t.done[id]||0)>=S.cfg.quota?'✅':'⏳'} ${t.names[i]}</p>`).join('')+`<p>${L('When everyone is done, come back and vote!','みんなが終わったら席に戻って投票！')}</p>`;
  else s.emit('next')}
 s.on('q',q=>{cur=q;locked=false;if(mode!='q')return;
  m.innerHTML=`<h2>${q.q}</h2><div id=opts>${q.o.map((o,i)=>`<button onclick="ans(${i})">${o}</button>`).join('')}</div>`});
 function ans(i){if(locked)return;locked=true;s.emit('ans',{id:cur.id,c:i})}
-s.on('res',r=>{m.innerHTML=`<h1>${r.ok?'✅ Correct!':'❌ Not quite'}</h1><p>${r.ok?'':'Answer: '+r.a}</p>`;
- setTimeout(()=>{if(mode=='q')s.emit('next')},1200)});
-
+// ---- answer feedback: your monster visibly grows or shrinks ----
+s.on('res',r=>{const t=S.teams.find(t=>t.id==me);
+ m.innerHTML=`<h1>${r.ok?L('✅ Correct!','✅ 正解！'):L('❌ Not quite','❌ おしい！')}</h1>${r.ok?'':`<p style="font-size:1.4rem">${L1('Answer','答え')}: <b>${r.a}</b></p>`}<canvas id=fb width=240 height=210></canvas><div style="font-size:1.5rem;font-weight:800;color:${r.ok?'#69db7c':'#ff8787'}">${r.ok?L('▲ Bigger!','▲ 大きくなった！'):L('▼ Smaller…','▼ 小さくなった…')}</div>`;
+ if(t){NT=S.nt||6;const t0=performance.now(),ease=k=>k*k*(3-2*k);
+  (function f(){const cv=document.getElementById('fb');if(!cv)return;const el=performance.now()-t0,g=cv.getContext('2d'),k=ease(Math.min(1,el/450));g.clearRect(0,0,240,210);
+   drawMonster(g,{tid:t.id,form:formOf(t),anim:r.ok?'happy':'sad',t:el,color:t.color,x:120+(r.ok?0:Math.sin(el/35)*(1-k)*8),y:108,r:50,scale:r.ok?1+.25*k:1-.3*k});
+   if(el<3000)requestAnimationFrame(f)})()}
+ setTimeout(()=>{if(mode=='q')s.emit('next')},r.ok?OK_MS:WRONG_MS)});
 // ---- short eat scene so students see what happened (and get a pause before new questions) ----
 fetch('/assets.json').then(r=>r.json()).then(artInit).catch(()=>{});
-const SCENE_MS=3600;let sc=null;
+let sc=null;
 s.on('scene',e=>{if(!joined)return;sc=Object.assign({t0:performance.now()},e);mode='scene';clear_();NT=e.nt||6;
- m.innerHTML=`<h1 style="margin:.2em">${e.role=='prey'?'😱 Eaten!':e.win?'😋 Chomp!':'😢 Missed!'}</h1><canvas id=scv width=320 height=320 style="max-width:90vw;background:#f4f1ea;border-radius:20px"></canvas>`;
+ m.innerHTML=`<h1 style="margin:.2em">${e.role=='prey'?'😱 '+L('Eaten!','食べられた！'):e.win?'😋 '+L('Chomp!','パクッ！'):'😢 '+L('Missed!','ざんねん！')}</h1><canvas id=scv width=320 height=320 style="max-width:90vw;background:#f4f1ea;border-radius:20px"></canvas>`;
  requestAnimationFrame(scLoop)});
 function scLoop(){if(!sc)return;const el=performance.now()-sc.t0,cv=document.getElementById('scv');if(cv)drawScene(cv.getContext('2d'),sc,el);
  if(el>=SCENE_MS){sc=null;mode='';draw()}else requestAnimationFrame(scLoop)}
